@@ -261,8 +261,7 @@ The app works **without any key** (offline answers, built-in subjects). Add keys
 | `TAVILY_API_KEY` | live web syllabus for any exam or subject |
 | `BREVO_API_KEY` + `MAIL_FROM` | real email codes (locally the code is printed in the terminal instead) |
 
-### Demo accounts
-Five accounts are ready for local testing: `bijay`, `ayush`, `pragyansh`, `pushpendra`, `vaishnavi`, all with password `12345` (type the name in the email box). **Delete or change them before a public deployment** (`data/users.json`). New users sign up with email verification.
+
 
 ---
 
