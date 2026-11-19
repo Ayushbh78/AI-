@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Progress - AI विद्यालय{% endblock %}
+{% block content %}
+{% set o = data.overall %}{% set a = data.activity %}
+<section class="study-head">
+  <div><h1>📊 {{ tr('Report card') }}</h1>
+    <p class="muted">{{ user.name }}{% if badge %} · {{ badge }}{% endif %}</p></div>
+  <div class="head-actions"><button type="button" class="btn" onclick="window.print()">🖨 Print</button></div>
+</section>
+
+<section class="stat-row four">
+  <div class="stat"><span class="muted small">Subjects</span><strong>{{ o.subjects }}</strong></div>
+  <div class="stat"><span class="muted small">Topics complete</span><strong>{{ o.done }} of {{ o.total }}</strong></div>
+  <div class="stat"><span class="muted small">Average mastery</span><strong>{% if o.mastery is not none %}{{ o.mastery }}% <span class="grade g-{{ o.grade|replace('+','p') }}">{{ o.grade }}</span>{% else %}Not tested yet{% endif %}</strong></div>
+  <div class="stat"><span class="muted small">Total study time</span><strong>{{ a.total_minutes|mins }}</strong></div>
+</section>
+
+{% if not data.rows %}
+<section class="panel empty-big"><div class="big-emoji">📊</div><h2>No records yet</h2>
+  <p class="muted">Enrol in a subject and your marks, grades and study history appear here.</p>
+  <a class="btn primary" href="{{ url_for('school.welcome', mode='subjects') if profile.get('onboarded') else url_for('school.welcome') }}">Choose subjects</a></section>
+{% else %}
+<section class="panel flush">
+  <table class="table report">
+    <thead><tr><th>Subject</th><th>Topics</th><th>Progress</th><th>Mastery</th><th>Grade</th><th>Tests</th><th>Best</th></tr></thead>
+    <tbody>
+      {% for r in data.rows %}
+      <tr>
+        <td><a href="{{ url_for('course_page', cid=r.course.id) }}"><strong>{{ r.course.subject }}</strong></a></td>
+        <td data-label="Topics">{{ r.stats.done }} / {{ r.stats.total }}</td>
+        <td data-label="Progress"><div class="bar mini"><span style="width: {{ r.stats.percent }}%"></span></div><span class="small muted">{{ r.stats.percent }}%</span></td>
+        <td data-label="Mastery">{% if r.stats.mastery is not none %}{{ r.stats.mastery }}%{% else %}-{% endif %}</td>
+        <td data-label="Grade"><span class="grade g-{{ r.grade|replace('+','p')|replace('-','none') }}">{{ r.grade }}</span></td>
+        <td data-label="Tests">{{ r.tests }}</td>
+        <td data-label="Best">{% if r.best is not none %}{{ r.best }}%{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<h2 class="sec-title">Subject records</h2>
+{% for r in data.rows %}
+{% set c = r.course %}
+<details class="panel rec" {{ 'open' if loop.first }}>
+  <summary><strong>{{ c.subject }}</strong><span class="small muted">{{ r.stats.done }} of {{ r.stats.total }} topics{% if r.grade != '-' %} · <span class="grade g-{{ r.grade|replace('+','p') }}">{{ r.grade }}</span>{% endif %}</span></summary>
+  {% for m in c.modules %}
+  <h3 class="mod-title">{{ m.title }} <span class="tag level-{{ m.level|lower }}">{{ m.level }}</span></h3>
+  <ul class="topic-rec">
+    {% for t in m.topics %}
+    <li><a href="{{ url_for('learn_page', cid=c.id, tid=t.id) }}">{{ t.title }}</a>
+      <span class="state s-{{ t.status }}">{% if t.status == 'done' %}Complete{% elif t.mastery is not none %}In progress{% else %}Not started{% endif %}</span>
+      {% if t.mastery is not none %}<span class="small muted">{{ t.mastery }}% · {{ t.attempts }} attempt{{ 's' if t.attempts != 1 }}</span>{% else %}<span></span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+  {% if r.history %}
+  <h3 class="mod-title">Quiz and test history</h3>
+  <ul class="plain-list">{% for h in r.history %}<li><span>{{ h.kind }} · {{ h.when }}</span><span><strong>{{ h.percent }}%</strong> <span class="small muted">({{ h.score }}/{{ h.total }})</span></span></li>{% endfor %}</ul>
+  {% endif %}
+</details>
+{% endfor %}
+
+<section class="panel">
+  <h2>Study log</h2>
+  {% set peak = [60, a.last14|map(attribute='minutes')|max]|max %}
+  <div class="bars">{% for d in a.last14 %}<div class="bar-col" title="{{ d.day }}: {{ d.minutes }} min"><div class="bar-fill {{ 'zero' if not d.minutes }}" style="height: {{ (100 * d.minutes / peak)|round|int }}%"></div><span>{{ d.label }}</span></div>{% endfor %}</div>
+  <p class="small muted">🔥 Streak: {{ a.streak }} day{{ 's' if a.streak != 1 }} · This week: {{ a.week_minutes|mins }} · Study days: {{ a.active_days }}</p>
+  {% if a.recent %}<ul class="timeline">{% for e in a.recent %}<li><span class="dot k-{{ e.kind }}"></span><div><strong>{{ e.title }}</strong><span class="small muted">{{ e.t|when }}{% if e.score is not none %} · {{ e.score }}%{% endif %}{% if e.course %} · {{ e.course }}{% endif %}</span></div></li>{% endfor %}</ul>{% endif %}
+</section>
+<section class="panel"><h2>{{ tr('Badges') }}</h2>
+  <div class="badge-grid">{% for b in data.badges %}<div class="badge {{ 'on' if b.earned }}"><span>{{ b.icon }}</span><strong>{{ b.name }}</strong><small>{{ b.how }}</small></div>{% endfor %}</div></section>
+{% endif %}
+{% endblock %}

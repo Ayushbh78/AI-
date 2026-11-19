@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}Coding Space & Practical Lab - AI विद्यालय{% endblock %}
+
+{% block content %}
+<div class="lab-container">
+  <!-- Top Navigation & Control Bar -->
+  <div class="lab-head-bar">
+    <div class="lab-head-left">
+      <a class="btn back-btn" href="{{ url_for('school.study') }}">Back</a>
+      <div>
+        <h2 id="lab-course-title">
+          {% if active_course %}{{ active_course.title }}{% else %}AI Vidyalaya Coding Playground{% endif %}
+        </h2>
+        <div class="lab-badges">
+          <span class="tag" id="lab-type-tag">{% if active_course and active_course.practical_type == 'sql' %}🗄️ SQL Lab{% elif active_course and active_course.practical_type == 'science_lab' %}🔬 Science Lab{% else %}💻 Coding Space{% endif %}</span>
+          {% if active_course and active_course.parent_course_id %}
+          <a href="{{ url_for('course_page', cid=active_course.parent_course_id) }}" class="tag" style="text-decoration:none;">📖 View Theory Syllabus</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-head-actions">
+      <!-- Course Switcher if multiple practical subjects -->
+      {% if practical_courses|length > 1 %}
+      <div class="lab-control-group">
+        <label class="small muted" for="course-switcher">Subject:</label>
+        <select id="course-switcher" class="lab-select">
+          {% for pc in practical_courses %}
+          <option value="{{ pc.id }}" {% if active_course and active_course.id == pc.id %}selected{% endif %}>
+            {{ pc.title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Language Selector -->
+      <div class="lab-control-group">
+        <label class="small muted" for="lang-selector">Language:</label>
+        <select id="lang-selector" class="lab-select">
+          <option value="python" {% if active_course and active_course.primary_language == 'python' %}selected{% endif %}>Python 3</option>
+          <option value="sql" {% if active_course and active_course.primary_language == 'sql' %}selected{% endif %}>SQL (SQLite)</option>
+          <option value="javascript" {% if active_course and active_course.primary_language == 'javascript' %}selected{% endif %}>JavaScript (Node)</option>
+          <option value="html" {% if active_course and active_course.primary_language == 'html' %}selected{% endif %}>HTML/CSS Preview</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn" id="btn-save-draft" title="Save draft code">💾 Save</button>
+      <button type="button" class="btn" id="btn-reset-code" title="Reset starter code">🔄 Reset</button>
+      <button type="button" class="btn primary" id="btn-run-code">▶ Run Code</button>
+    </div>
+  </div>
+
+  <!-- Workspace Grid -->
+  <div class="lab-workspace-grid">
+    <!-- 1. Left Sidebar: Exercises & Aim -->
+    <aside class="lab-sidebar panel">
+      <div class="plan-top mb-2">
+        <h3>🧪 Practical Lab Units</h3>
+        <button type="button" class="small-btn btn" id="btn-add-custom-ex" title="Generate custom exercise">+ Custom</button>
+      </div>
+
+      <div class="lab-ex-list" id="lab-ex-list">
+        {% if exercises %}
+          {% for ex in exercises %}
+          <div class="lab-ex-item {% if loop.first %}active{% endif %}" data-ex-id="{{ ex.id }}">
+            <div class="plan-top">
+              <span class="tag small-tag">{{ ex.difficulty or 'Lab' }}</span>
+              <span class="small muted">{{ ex.language or 'code' }}</span>
+            </div>
+            <strong>{{ ex.title }}</strong>
+            <p class="small muted truncate-2">{{ ex.aim }}</p>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="out-empty small-empty">
+            <p class="muted">No default exercises for this subject yet.</p>
+            <button type="button" class="btn small-btn mt-2" id="btn-gen-first-ex">✨ Generate Lab Exercise</button>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Current Exercise Detail Card -->
+      <div class="lab-active-ex-card mt-3" id="active-ex-detail">
+        <h4>📋 Current Problem Statement</h4>
+        <p class="small" id="ex-detail-aim" style="line-height:1.5; margin-top:6px;">Select an exercise above to load problem details.</p>
+        
+        <div id="ex-test-cases-wrap" class="mt-2" hidden>
+          <span class="small muted"><strong>Test Cases / Expected:</strong></span>
+          <div id="ex-test-cases" class="small monospace-box mt-1"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. Center: Code Editor -->
+    <main class="lab-editor-pane panel">
+      <div class="editor-header">
+        <div class="editor-tabs">
+          <span class="editor-filename" id="editor-filename">solution.py</span>
+          <span class="small muted" id="editor-status">Ready</span>
+        </div>
+        <div class="editor-tools">
+          <button type="button" class="small-btn btn" id="btn-toggle-stdin" title="Toggle standard input">📥 Input (stdin)</button>
+          <button type="button" class="small-btn btn" id="btn-copy-code" title="Copy code">📋 Copy</button>
+          <button type="button" class="small-btn btn" id="btn-ai-hint">💡 Debug Hint</button>
+          <button type="button" class="small-btn btn primary" id="btn-ai-review">🤖 AI Review</button>
+        </div>
+      </div>
+
+      <!-- Optional Stdin Area -->
+      <div id="stdin-wrap" class="stdin-box" hidden>
+        <label class="small muted">Program Standard Input (stdin):</label>
+        <textarea id="lab-stdin" rows="2" placeholder="Values passed to input()..."></textarea>
+      </div>
+
+      <!-- Code Textarea with Line Numbers -->
+      <div class="code-area-wrap">
+        <textarea id="lab-code" class="lab-code-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="none" placeholder="# Write your code here..."></textarea>
+      </div>
+
+      <div class="editor-footer">
+        <span class="small muted">Keyboard Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to Run</span>
+        <span class="small muted" id="char-line-count">Ln 1, Col 1</span>
+      </div>
+    </main>
+
+    <!-- 3. Right: Console & AI Feedback Pane -->
+    <aside class="lab-console-pane panel">
+      <div class="seg mb-2" id="console-tabs" role="tablist">
+        <button type="button" class="seg-btn on" data-tab="stdout">🖥️ Output</button>
+        <button type="button" class="seg-btn" data-tab="review">🤖 AI Review</button>
+        <button type="button" class="seg-btn" data-tab="debug">💡 Debug</button>
+        <button type="button" class="seg-btn" data-tab="viva">🎓 Viva Voce</button>
+      </div>
+
+      <!-- Tab 1: Terminal Output -->
+      <div id="tab-stdout" class="console-pane-body">
+        <div class="console-meta-bar" id="console-meta-bar">
+          <span class="status-indicator ready" id="exec-status-dot"></span>
+          <span class="small muted" id="exec-status-text">Sandbox ready. Press "Run Code" to execute.</span>
+          <span class="score-badge" id="exec-duration-badge" hidden>0 ms</span>
+        </div>
+
+        <div class="terminal-screen" id="terminal-screen">
+          <div class="terminal-placeholder" id="terminal-placeholder">
+            <span class="big-emoji">💻</span>
+            <p class="muted small">Output and console prints will appear here in real time.</p>
+          </div>
+          <pre class="terminal-stdout" id="terminal-stdout" hidden></pre>
+          <pre class="terminal-stderr" id="terminal-stderr" hidden></pre>
+          <iframe id="terminal-preview" class="terminal-preview-frame" hidden sandbox="allow-scripts"></iframe>
+        </div>
+      </div>
+
+      <!-- Tab 2: AI Review & Grading -->
+      <div id="tab-review" class="console-pane-body" hidden>
+        <div id="review-empty" class="out-empty small-empty">
+          <span class="big-emoji">🤖</span>
+          <h4>AI Examiner Review</h4>
+          <p class="muted small">Click "AI Review" to evaluate your code for correctness, time/space complexity, edge cases, and marks.</p>
+        </div>
+
+        <div id="review-loading" class="loading-box" hidden>
+          <span class="spinner"></span> AI Examiner is analyzing code logic, asymptotic complexity, and edge cases...
+        </div>
+
+        <div id="review-content" class="review-details" hidden>
+          <div class="plan-top mb-2">
+            <div>
+              <span class="score-badge" id="review-score" style="font-size:1.1rem; padding:4px 12px; background:var(--ok-soft); color:var(--ok);">9 / 10</span>
+              <span class="tag" id="review-verdict" style="margin-left:6px;">Good</span>
+            </div>
+            <div class="complexity-tags">
+              <span class="tag" id="review-time-comp">Time: O(n)</span>
+              <span class="tag" id="review-space-comp">Space: O(1)</span>
+            </div>
+          </div>
+
+          <div class="review-section mt-2">
+            <strong>✅ Strengths:</strong>
+            <ul id="review-strengths" class="small mt-1"></ul>
+          </div>
+
+          <div class="review-section mt-2">
+            <strong>💡 Improvements & Edge Cases:</strong>
+            <ul id="review-improvements" class="small mt-1"></ul>
+          </div>
+
+          <div class="review-section mt-2" id="model-code-wrap">
+            <details>
+              <summary class="small" style="font-weight:700; cursor:pointer;">📖 View Examiner's Recommended Refactoring</summary>
+              <pre class="small monospace-box mt-1" id="review-model-code"></pre>
+            </details>
+          </div>
+
+          <div class="review-section mt-2 eval-box ok">
+            <strong class="small">🎓 Viva Voce Tip from Examiner:</strong>
+            <p class="small mt-1" id="review-viva-tip"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Socratic Debugger -->
+      <div id="tab-debug" class="console-pane-body" hidden>
+        <div id="debug-empty" class="out-empty small-empty">
+          <span class="big-emoji">💡</span>
+          <h4>Socratic Debug Assistant</h4>
+          <p class="muted small">If your code fails or has errors, click "Debug Hint" for targeted guidance that helps you find the bug yourself.</p>
+        </div>
+
+        <div id="debug-loading" class="loading-box" hidden>
+          <span class="spinner"></span> Socratic Assistant is inspecting the error trace...
+        </div>
+
+        <div id="debug-content" class="debug-details" hidden>
+          <div class="eval-box warn">
+            <strong id="debug-error-type">Runtime Issue</strong>
+            <p class="small mt-1" id="debug-diagnosis"></p>
+          </div>
+          <div class="mt-2">
+            <strong>🎯 Where to Look:</strong>
+            <p class="small monospace-box mt-1" id="debug-line-hint"></p>
+          </div>
+          <div class="mt-2">
+            <strong>💡 Progressive Hints:</strong>
+            <ol id="debug-hints-list" class="small mt-1"></ol>
+          </div>
+          <div class="eval-box ok mt-2">
+            <strong>⚡ Quick Recommendation:</strong>
+            <p class="small mt-1" id="debug-quick-tip"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Viva Voce Questions -->
+      <div id="tab-viva" class="console-pane-body" hidden>
+        <h4>🎓 Viva Voce Oral Exam Preparation</h4>
+        <p class="small muted">Common questions asked by external university examiners for this laboratory experiment.</p>
+        <div id="viva-questions-list" class="viva-list mt-2"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Modal: Custom Exercise Generator -->
+<div class="modal" id="custom-ex-modal" hidden>
+  <div class="modal-backdrop" id="custom-modal-backdrop"></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Generate Custom Lab Exercise</h2>
+      <button type="button" class="modal-x" id="custom-modal-close">&times;</button>
+    </div>
+    <p class="muted small">Create an on-demand practical exercise for any chapter or concept in your syllabus.</p>
+    <form id="custom-ex-form">
+      <label class="field">Topic or Problem Concept
+        <input type="text" id="custom-topic-input" placeholder="e.g. Dijkstra's Algorithm, SQL Joins, Matrix Multiplication..." required maxlength="150">
+      </label>
+      <label class="field">Programming Language
+        <select id="custom-lang-select" class="lab-select">
+          <option value="python">Python</option>
+          <option value="sql">SQL</option>
+          <option value="javascript">JavaScript</option>
+          <option value="html">HTML/CSS</option>
+        </select>
+      </label>
+      <div class="btn-row spread mt-3">
+        <button type="button" class="btn" id="custom-modal-cancel">Cancel</button>
+        <button type="submit" class="btn primary" id="custom-modal-submit">✨ Synthesize Challenge</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Embedded Initial Exercise Data -->
+<script>
+  window.LAB_CONFIG = {
+    courseId: "{{ active_course.id if active_course else '' }}",
+    courseTitle: "{{ active_course.title if active_course else 'Coding Playground' }}",
+    practicalType: "{{ active_course.practical_type if active_course else 'coding' }}",
+    primaryLanguage: "{{ active_course.primary_language if active_course else 'python' }}",
+    exercises: {{ exercises|tojson if exercises else '[]' }}
+  };
+</script>
+
+<style>
+.lab-container { display: flex; flex-direction: column; gap: 14px; margin-bottom: 30px; }
+.lab-head-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.lab-head-left { display: flex; align-items: center; gap: 14px; }
+.lab-head-left h2 { margin: 0; font-size: 1.35rem; }
+.lab-badges { display: flex; gap: 8px; margin-top: 4px; }
+.lab-head-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.lab-control-group { display: flex; align-items: center; gap: 6px; }
+.lab-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); font: inherit; font-size: 0.88rem; color: inherit; }
+
+.lab-workspace-grid { display: grid; grid-template-columns: 280px minmax(400px, 1fr) 340px; gap: 14px; min-height: 640px; }
+@media (max-width: 1100px) {
+  .lab-workspace-grid { grid-template-columns: 260px 1fr; }
+  .lab-console-pane { grid-column: span 2; }
+}
+@media (max-width: 780px) {
+  .lab-workspace-grid { grid-template-columns: 1fr; }
+  .lab-console-pane { grid-column: span 1; }
+}
+
+.lab-sidebar { display: flex; flex-direction: column; max-height: 720px; overflow-y: auto; padding: 14px; }
+.lab-ex-list { display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; }
+.lab-ex-item { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; transition: all 0.15s; }
+.lab-ex-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.lab-ex-item.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.lab-ex-item strong { display: block; font-size: 0.92rem; margin: 4px 0 2px; }
+.small-tag { font-size: 0.72rem; padding: 2px 6px; }
+.truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
+.lab-active-ex-card { background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
+.monospace-box { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: var(--surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-all; }
+
+.lab-editor-pane { display: flex; flex-direction: column; padding: 12px 14px; }
+.editor-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px; }
+.editor-filename { font-weight: 700; font-family: monospace; font-size: 0.95rem; }
+.editor-tools { display: flex; gap: 6px; }
+.stdin-box { margin-bottom: 8px; }
+.stdin-box textarea { width: 100%; font-family: monospace; font-size: 0.85rem; padding: 6px; border: 1px solid var(--line); border-radius: 6px; }
+
+.code-area-wrap { flex: 1; display: flex; min-height: 480px; position: relative; }
+.lab-code-editor { width: 100%; height: 100%; min-height: 480px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; tab-size: 4; background: #1e1e2e; color: #cdd6f4; outline: none; }
+.lab-code-editor:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+[data-theme="dark"] .lab-code-editor { background: #181825; color: #cdd6f4; }
+.editor-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+kbd { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 2px 5px; font-size: 0.75rem; font-family: monospace; }
+
+.lab-console-pane { display: flex; flex-direction: column; padding: 14px; max-height: 720px; overflow-y: auto; }
+.console-pane-body { display: flex; flex-direction: column; flex: 1; }
+.console-meta-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg); border-radius: 6px; margin-bottom: 10px; font-size: 0.85rem; }
+.status-indicator { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.status-indicator.ready { background: var(--accent); }
+.status-indicator.running { background: var(--warn); animation: pulse 1s infinite; }
+.status-indicator.ok { background: var(--ok); }
+.status-indicator.error { background: var(--bad); }
+
+.terminal-screen { flex: 1; min-height: 420px; background: #11111b; color: #a6adc8; border-radius: 8px; padding: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.88rem; overflow-y: auto; line-height: 1.45; }
+.terminal-stdout { color: #a6e3a1; white-space: pre-wrap; word-break: break-all; margin: 0; }
+.terminal-stderr { color: #f38ba8; white-space: pre-wrap; word-break: break-all; margin-top: 8px; }
+.terminal-preview-frame { width: 100%; height: 100%; min-height: 400px; border: 0; background: white; border-radius: 6px; }
+.terminal-placeholder { text-align: center; padding: 50px 10px; }
+
+.review-details { display: flex; flex-direction: column; gap: 10px; }
+.complexity-tags { display: flex; gap: 6px; }
+.viva-item { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.viva-q { font-weight: 700; font-size: 0.92rem; }
+.viva-a { margin-top: 6px; font-size: 0.85rem; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lab.js', v=asset_v) }}"></script>
+{% endblock %}

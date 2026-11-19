@@ -1,0 +1,32 @@
+{
+  "bijay": {
+    "name": "Bijay",
+    "password": "scrypt:32768:8:1$jrKNnlcRDg23DJHj$c7bef84f04d03c5f26124e9c80798b17f9dc34aa2f7509968b45d6bcf5af62459858f847d8a613d6cdd771c06e6179cc58d9bc42e4d53688a3d3c0657ab04868",
+    "created": "2026-11-15T17:01:09"
+  },
+  "ayush": {
+    "name": "Ayush",
+    "password": "scrypt:32768:8:1$b0IE84S8nMe6AX0R$639eac3f639c0849f706ac28cd53383709070148f438434030149a2d5df34535115d3f88a3f78600d7194bd885e067a07e52c0b618a1c2a4db32cef02031ea55",
+    "created": "2026-11-15T17:01:09"
+  },
+  "pragyansh": {
+    "name": "Pragyansh",
+    "password": "scrypt:32768:8:1$aDPIkckJ4gIohWyC$ba574e0243db858cb9f2dfa9f4f6d15c755e68c6e9fa0554475c14d095d5c0e00404d7480bdbb8bde4f89bb6f519dca71a4362bb939eff1f1b12ff37cd9af48d",
+    "created": "2026-11-15T17:01:09"
+  },
+  "pushpendra": {
+    "name": "Pushpendra",
+    "password": "scrypt:32768:8:1$ATeFt1bh9SkNv2jv$b28a908c50974eadd67182e012a45e10c69fbea0083a155ab290ab7a0098777fd2b30e88a0f0486fa4e7e97add07a5ed9f68e9b1d148388fb9db032868e30842",
+    "created": "2026-11-15T17:01:09"
+  },
+  "vaishnavi": {
+    "name": "Vaishnavi",
+    "password": "scrypt:32768:8:1$KsznkRev9W0EmpWM$78c6dcce03d8fc62a34f5597148cdf99b77d46a814780bb800dfaecbde383177e9a4b7811f05002a2dacabef9ddf8b386d5bdf99d744d6d66e3015c9eecd8f4d",
+    "created": "2026-11-15T17:01:09"
+  },
+  "pragyanshdixit": {
+    "name": "Pragyanshdixit",
+    "password": "scrypt:32768:8:1$2jW7n3Rmg0M9EdJW$d50dde3f3097b1df5f99874bd741356868f737b6b9572b89f7a96b65fd7f1e9726c104951542c9c2b569b15cb7b9c4ace92d23519bd11a8705ae058725ab3efa",
+    "created": "2026-11-15T17:02:26"
+  }
+}

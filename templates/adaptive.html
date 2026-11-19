@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Adaptive Learning - AI विद्यालय{% endblock %}
+
+{% block content %}
+<section class="study-head">
+  <div>
+    <h1>🧠 {{ tr('Adaptive Learning') }}</h1>
+    <p class="muted">AI-driven mastery engine: diagnoses knowledge gaps, tracks retention decay, and dynamically adapts difficulty to your learning pace.</p>
+  </div>
+  <div class="head-actions">
+    <button type="button" class="btn primary" id="btn-quick-adaptive-test">⚡ Start Smart Adaptive Test</button>
+  </div>
+</section>
+
+<!-- Stat Cards -->
+<section class="stat-row four">
+  <div class="stat">
+    <span class="muted small">Average Mastery</span>
+    <strong>{{ data.average_mastery }}%</strong>
+  </div>
+  <div class="stat">
+    <span class="muted small">Recommended Difficulty</span>
+    <strong class="ok-text" style="font-size: 1.15rem;">{{ data.difficulty_label }}</strong>
+  </div>
+  <div class="stat">
+    <span class="muted small">Mastered Topics</span>
+    <strong>{{ data.mastery_counts.mastered }} <span class="small muted">/ {{ data.total_topics }}</span></strong>
+  </div>
+  <div class="stat">
+    <span class="muted small">Needs Focus / Review</span>
+    <strong style="color: var(--warn);">{{ data.mastery_counts.needs_focus + data.mastery_counts.developing }}</strong>
+  </div>
+</section>
+
+<!-- Main Two-Column Layout -->
+<div class="two-col mt-3">
+  <!-- Left Column: Recommendations & Adaptive Test Studio -->
+  <div class="col-main">
+    <!-- AI Diagnosis & Action Plan -->
+    <section class="panel mb-3">
+      <h2>🎯 AI Learning Diagnosis & Action Plan</h2>
+      <p class="small muted mb-2">High-impact actions personalized for you based on recent quiz scores and the forgetting curve.</p>
+      <div class="rec-list">
+        {% for rec in data.recommendations %}
+        <article class="rec-card" style="border-left: 4px solid var(--accent); padding: 14px; background: var(--surface); border-radius: var(--radius); margin-bottom: 12px; border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+          <div class="plan-top">
+            <div>
+              <span class="tag" style="background: var(--accent-soft); color: var(--accent-dark);">{{ rec.icon }} {{ rec.priority }} Priority</span>
+              <h3 style="margin: 6px 0 2px;">{{ rec.title }}</h3>
+            </div>
+            <a href="{{ rec.action_url }}" class="btn primary small-btn">Take Action →</a>
+          </div>
+          <p class="small muted mt-1">{{ rec.desc }}</p>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Smart Adaptive Test Runner Section -->
+    <section class="panel mb-3" id="adaptive-test-section">
+      <div class="plan-top mb-2">
+        <div>
+          <h2>⚡ Smart Adaptive Test Studio</h2>
+          <p class="small muted">Generates a test targeting your weakest areas with difficulty calibrated to your current mastery level. Evaluated line-by-line by AI.</p>
+        </div>
+      </div>
+
+      <form id="adaptive-test-form" class="form-grid mb-3">
+        <label class="field">Test Format
+          <select id="at-format">
+            <option value="mixed" selected>Mixed (Subjective + Multiple Choice) - AI Evaluated</option>
+            <option value="subjective">Subjective / Written Answers Only - AI Evaluated</option>
+            <option value="mcq">Multiple Choice Only</option>
+          </select>
+        </label>
+        <label class="field">Questions Count
+          <select id="at-count">
+            <option value="4">4 Questions</option>
+            <option value="6" selected>6 Questions</option>
+            <option value="8">8 Questions</option>
+          </select>
+        </label>
+        <div class="field actions">
+          <button class="btn primary" type="submit" id="btn-launch-adaptive">🚀 Generate Calibrated Test</button>
+        </div>
+      </form>
+
+      <div id="at-loading" class="loading-box" hidden>
+        <span class="spinner"></span> AI is analyzing weak spots and setting calibrated questions...
+      </div>
+
+      <div id="at-runner-box"></div>
+    </section>
+  </div>
+
+  <!-- Right Column: Visual Mastery Matrix -->
+  <div class="col-side">
+    <section class="panel">
+      <h2>📊 Topic Mastery Matrix</h2>
+      <p class="small muted mb-2">Visual breakdown of your conceptual strength across all enrolled subjects.</p>
+
+      {% if not data.matrix %}
+      <div class="center p-3">
+        <p class="muted">No course topics found yet.</p>
+        <a href="/study" class="btn primary mt-2">Go to My Study</a>
+      </div>
+      {% else %}
+      <div class="matrix-list">
+        {% for item in data.matrix %}
+        <div class="matrix-item mb-2" style="padding: 10px 12px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--line);">
+          <div class="plan-top">
+            <div>
+              <strong>{{ item.topic_title }}</strong>
+              <div class="small muted">{{ item.course_title }}</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="score-badge" style="background: var(--{{ item.level.color }}-soft); color: var(--{{ item.level.color }});">
+                {{ item.level.emoji }} {{ item.mastery ~ '%' if item.mastery is not none else 'Untested' }}
+              </span>
+              {% if item.retention is not none and item.retention < item.mastery %}
+              <div class="small muted" title="Retention estimated from forgetting curve">decay: ~{{ item.retention }}%</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- Forgetting Curve Warning if any -->
+    {% if data.needs_review %}
+    <section class="panel warn-panel mt-3">
+      <h3>⏳ Forgetting Curve Alert</h3>
+      <p class="small muted">You previously understood these topics, but spaced repetition is due to keep them in long-term memory:</p>
+      <ul class="plain-list mt-1">
+        {% for t in data.needs_review %}
+        <li>
+          <a href="/courses/{{ t.course_id }}/learn/{{ t.topic_id }}"><strong>{{ t.topic_title }}</strong></a>
+          <span class="small muted">{{ t.course_title }} · retention ~{{ t.retention }}%</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.mb-2 { margin-bottom: 12px; }
+.mb-3 { margin-bottom: 18px; }
+.mt-1 { margin-top: 6px; }
+.mt-2 { margin-top: 12px; }
+.mt-3 { margin-top: 18px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.matrix-list { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.test-q-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.test-q-text { font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; }
+.test-sub-input { width: 100%; min-height: 110px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; resize: vertical; margin-top: 8px; }
+.test-sub-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.eval-box { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 0.92rem; }
+.eval-box.ok { background: var(--ok-soft); border: 1px solid var(--ok); }
+.eval-box.warn { background: var(--warn-soft); border: 1px solid var(--warn); }
+.score-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.85rem; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/adaptive.js', v=asset_v) }}"></script>
+{% endblock %}

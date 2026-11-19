@@ -1,0 +1,22 @@
+{% macro seg(name, options, current) -%}
+<div class="seg" data-seg="{{ name }}" role="radiogroup">
+  {% for value, label in options %}<button type="button" class="seg-btn {{ 'on' if value == current }}" data-value="{{ value }}" role="radio">{{ label }}</button>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro out_panel(placeholder_icon, placeholder_text) -%}
+<section class="panel tool-out" id="tool-out">
+  <div class="out-empty" id="out-empty"><div class="big-emoji">{{ placeholder_icon }}</div><p class="muted">{{ placeholder_text }}</p></div>
+  <div class="loading-box" id="out-loading" hidden><span class="spinner"></span><span id="out-loading-text">Working…</span></div>
+  <p class="error" id="out-error" hidden></p>
+  <div id="out-result" hidden>
+    <div class="out-actions">
+      <button type="button" class="btn small-btn" id="act-copy">Copy</button>
+      <button type="button" class="btn small-btn" onclick="window.print()">🖨 Print / PDF</button>
+      <a class="btn small-btn" href="{{ url_for('school.library_page') }}">🔖 Saved in Library</a>
+      <button type="button" class="btn small-btn" id="act-answers" hidden>Show answers</button>
+    </div>
+    <article class="prose out-body" id="out-body"></article>
+  </div>
+</section>
+{%- endmacro %}

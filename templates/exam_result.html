@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Exam result - AI विद्यालय{% endblock %}
+{% block content %}
+<div id="res" data-aid="{{ aid }}"><p class="muted">Loading your result…</p></div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/examresult.js', v=asset_v) }}"></script>{% endblock %}

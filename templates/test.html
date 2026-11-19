@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Test - {{ c.title }}{% endblock %}
+{% block content %}
+<p class="crumb"><a class="btn back-btn" href="{{ url_for('course_page', cid=c.id) }}" data-back>Back</a></p>
+<section class="page-head">
+  <h1>Test</h1>
+  <p class="muted">Pick what to be tested on. Your mastery scores update from the result, and weak topics get a revision session on your schedule.</p>
+</section>
+
+<section class="panel">
+  <form id="test-form" class="form-grid">
+    <label class="field">Cover
+      <select id="scope">
+        <option value="all">Whole course</option>
+        {% for m in c.modules %}<option value="{{ m.id }}">Module {{ loop.index }}: {{ m.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field">Test Format
+      <select id="test-format">
+        <option value="mixed" selected>Mixed (Subjective + Multiple Choice) - Evaluated by AI</option>
+        <option value="subjective">Subjective / Written Answers Only - Evaluated by AI</option>
+        <option value="mcq">Multiple Choice Only</option>
+      </select>
+    </label>
+    <label class="field">Number of questions
+      <select id="count">
+        <option value="4">4</option>
+        <option value="6" selected>6</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+      </select>
+    </label>
+    <div class="field actions"><button class="btn primary" type="submit">Start test</button></div>
+  </form>
+</section>
+
+<style>
+.test-q-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.test-q-text { font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; }
+.test-sub-input { width: 100%; min-height: 110px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; resize: vertical; margin-top: 8px; }
+.test-sub-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.eval-box { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 0.92rem; }
+.eval-box.ok { background: var(--ok-soft); border: 1px solid var(--ok); }
+.eval-box.warn { background: var(--warn-soft); border: 1px solid var(--warn); }
+.score-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.85rem; }
+</style>
+
+<section class="panel" id="test-card" hidden>
+  <div id="quiz-box"></div>
+</section>
+<script type="application/json" id="boot">{{ boot|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quiz.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/test.js', v=asset_v) }}"></script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_tools.html" import seg, out_panel %}
+{% from "_exam_picker.html" import exam_picker %}
+{% block title %}Exam Paper - AI विद्यालय{% endblock %}
+{% block content %}
+<section class="tool-head"><h1>📄 Exam Paper</h1>
+  <p class="muted">Take a real exam-style mock test (GATE, JEE, NEET, CAT ...) in a timed exam hall, or create a custom question paper with an answer key.</p></section>
+<div class="seg paper-tabs" id="paper-mode" role="tablist">
+  <button type="button" class="seg-btn on" data-mode="exam" role="tab">🎯 Exam mock test</button>
+  <button type="button" class="seg-btn" data-mode="custom" role="tab">✏️ Custom paper</button>
+</div>
+
+<div id="mode-exam">
+  {% if not ctx.has_ai %}<p class="warn-box">The AI key is not set on the server yet, so papers cannot be generated.</p>{% endif %}
+  <section class="panel ex-step">
+    <h2 class="ex-h">1. Choose the exam</h2>
+    {{ exam_picker('picker') }}
+  </section>
+  <section class="panel ex-step" id="ex-config" hidden>
+    <h2 class="ex-h">2. What do you want to attempt?</h2>
+    <p class="muted small" id="ex-pattern-line"></p>
+    <div class="seg" id="ex-scope" data-seg="scope">
+      <button type="button" class="seg-btn on" data-value="full">Full paper</button>
+      <button type="button" class="seg-btn" data-value="subjects">Choose subjects</button>
+    </div>
+    <div id="ex-subject-list" class="ex-checks" hidden></div>
+    <div class="field">Difficulty{{ seg('ex-diff', [('easy','Easy'),('medium','Medium'),('hard','Hard')], 'medium') }}</div>
+    <p class="muted small">Marks, question types, negative marking and time are taken from the official pattern automatically.</p>
+    <button type="button" class="btn primary wide" id="gen-btn">📝 Generate paper</button>
+  </section>
+  <div id="gen-box" class="ex-gen" hidden></div>
+  <div id="my-papers-wrap" hidden><section class="panel ex-step"><h2 class="ex-h">My exam papers</h2><div id="my-papers"></div></section></div>
+  <script type="application/json" id="exam-catalog">{{ ctx.catalog | tojson }}</script>
+</div>
+
+<div id="mode-custom" hidden>
+<div class="tool-grid">
+  <form class="panel tool-form" id="tool-form" data-tool="paper" autocomplete="off">
+    <label class="field">Subject
+      <input type="text" id="p-subject" maxlength="100" list="subj-list" placeholder="e.g. Mathematics" required>
+      <datalist id="subj-list">{% for s in ctx.subjects %}<option value="{{ s }}">{% endfor %}</datalist>
+    </label>
+    <label class="field">Chapters / topics (optional)
+      <input type="text" id="p-topics" maxlength="300" placeholder="e.g. Quadratic equations, Trigonometry">
+    </label>
+    <label class="field">Exam pattern
+      <input type="text" id="p-pattern" maxlength="140" value="{{ ctx.target }}" placeholder="e.g. CBSE Class 10 board, GATE CS, university semester exam">
+    </label>
+    <div class="two-fields">
+      <label class="field">Total marks
+        <select id="p-marks"><option>20</option><option>30</option><option>40</option><option selected>50</option><option>80</option><option>100</option></select></label>
+      <label class="field">Time
+        <select id="p-minutes"><option value="45">45 min</option><option value="60">1 hour</option><option value="90" selected>1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select></label>
+    </div>
+    <div class="field">Difficulty{{ seg('difficulty', [('easy','Easy'),('medium','Medium'),('hard','Hard')], 'medium') }}</div>
+    <button class="btn primary wide" type="submit" id="go-btn">✨ Create question paper</button>
+    {% if not ctx.has_ai %}<p class="warn-box">The AI key is not set on the server yet, so papers cannot be generated.</p>{% endif %}
+  </form>
+  {{ out_panel('📄', 'Your question paper and answer key will appear here.') }}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/tools.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/examtools.js', v=asset_v) }}"></script>{% endblock %}

@@ -1,0 +1,11 @@
+{% macro item_url(c, it) -%}
+{%- if it.type == 'test' -%}{{ url_for('test_page', cid=c.id) }}
+{%- elif it.type == 'quiz' -%}{{ url_for('learn_page', cid=c.id, tid=it.topic_id, mode='quiz') }}
+{%- else -%}{{ url_for('learn_page', cid=c.id, tid=it.topic_id) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro topic_state(t) -%}
+{%- if t.status == 'done' -%}Complete{% if t.mastery is not none %}, mastery {{ t.mastery }}%{% endif %}
+{%- elif t.mastery is not none -%}Mastery {{ t.mastery }}%
+{%- else -%}Not started{%- endif -%}
+{%- endmacro %}

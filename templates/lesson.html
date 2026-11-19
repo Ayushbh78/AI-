@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ t.title }} - AI विद्यालय{% endblock %}
+{% block content %}
+<p class="crumb"><a class="btn back-btn" href="{{ url_for('course_page', cid=c.id) }}" data-back>Back</a></p>
+
+<section class="page-head">
+  <h1>{{ t.title }}</h1>
+  <p class="muted">{{ m.title }} <span class="tag level-{{ m.level|lower }}">{{ m.level }}</span></p>
+  {% if t.summary %}<p class="muted">{{ t.summary }}</p>{% endif %}
+  <p class="small muted" id="mastery-line">{% if t.mastery is not none %}Mastery on this topic: {{ t.mastery }}%{% else %}Not tested yet{% endif %}</p>
+</section>
+
+<div class="lesson-grid">
+  <div class="lesson-main">
+    <article class="panel prose" id="lesson-body"><p class="muted loading">Preparing your lesson. This takes a few seconds the first time.</p></article>
+    <div class="sources" id="lesson-sources" hidden></div>
+
+    <section class="panel" id="cards-panel" hidden>
+      <h2>Flashcards</h2>
+      <div id="cards-box"></div>
+    </section>
+
+    <div class="action-bar">
+      <button class="btn primary" type="button" id="start-quiz">Check my understanding</button>
+      <button class="btn" type="button" id="complete-btn">{{ 'Completed' if t.status == 'done' else 'Mark as complete' }}</button>
+      <button class="btn quiet" type="button" id="regen-btn">Rewrite lesson</button>
+    </div>
+
+    <section class="panel" id="quiz-card" hidden>
+      <h2>Check your understanding</h2>
+      <div id="quiz-box"></div>
+    </section>
+
+    <p class="topic-nav">
+      {% if prev_id %}<a href="{{ url_for('learn_page', cid=c.id, tid=prev_id) }}">Previous topic</a>{% else %}<span></span>{% endif %}
+      {% if next_id %}<a href="{{ url_for('learn_page', cid=c.id, tid=next_id) }}">Next topic</a>{% endif %}
+    </p>
+  </div>
+
+  <aside class="panel ask">
+    <h2>Ask a question</h2>
+    <div id="chat-log" class="chat-log" aria-live="polite"></div>
+    <form id="chat-form">
+      <textarea id="chat-input" rows="3" maxlength="2000" placeholder="Ask anything about this topic" required></textarea>
+      <button class="btn primary" type="submit" id="chat-send">Send</button>
+    </form>
+  </aside>
+</div>
+<script type="application/json" id="boot">{{ boot|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quiz.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/rote.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/lesson.js', v=asset_v) }}"></script>
+{% endblock %}

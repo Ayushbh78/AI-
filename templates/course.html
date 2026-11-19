@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_url, topic_state %}
+{% block title %}{{ c.title }} - AI विद्यालय{% endblock %}
+{% block content %}
+<p class="crumb"><a class="btn back-btn" href="{{ url_for('index') }}">Back</a></p>
+
+<section class="page-head">
+  <h1>{{ c.title }}</h1>
+  <p class="muted">{{ c.description }}</p>
+  <p class="small muted">{{ c.level|level_label }}, {{ c.hours|hours_label }} h a day for {{ c.days }} days</p>
+</section>
+
+<section class="summary">
+  <div><span class="muted small">Topics complete</span><strong>{{ stats.done }} of {{ stats.total }}</strong></div>
+  <div><span class="muted small">Average mastery</span><strong>{% if stats.mastery is not none %}{{ stats.mastery }}%{% else %}Not tested yet{% endif %}</strong></div>
+  <div><span class="muted small">Study schedule</span><strong>{% if today %}Day {{ today.day }} of {{ c.schedule|length }}{% elif finished %}Finished{% else %}Not planned{% endif %}</strong></div>
+</section>
+
+<section class="panel today">
+  {% if not c.schedule %}
+    <h2>Schedule</h2>
+    <p class="muted">This course has no study schedule yet.</p>
+    <button class="btn primary" type="button" data-action="schedule">Plan my schedule</button>
+  {% elif finished %}
+    <h2>Everything on your schedule is done</h2>
+    <p class="muted">Take the final test to check what you remember, then revisit any weak topics.</p>
+    <a class="btn primary" href="{{ url_for('test_page', cid=c.id) }}">Take a test</a>
+  {% else %}
+    <h2>Today: day {{ today.day }}, {{ today.date|pretty_date }}</h2>
+    {% if today.focus %}<p class="muted">{{ today.focus }}</p>{% endif %}
+    <ul class="task-list">
+      {% for it in today["items"] %}
+      <li class="{{ 'done' if it.done else '' }}">
+        <a href="{{ item_url(c, it) }}">{{ it.title }}</a>
+        <span class="small muted">{{ it.minutes }} min{% if it.done %}, done{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if today.tip %}<p class="small muted">Tip: {{ today.tip }}</p>{% endif %}
+    {% if next_item %}<a class="btn primary" href="{{ item_url(c, next_item) }}">Start: {{ next_item.title }}</a>{% endif %}
+  {% endif %}
+</section>
+
+{% if c.is_practical or c.is_practical_lab or c.practical_course_id %}
+<article class="panel mb-3" style="background: linear-gradient(135deg, rgba(82, 93, 249, 0.08) 0%, rgba(20, 184, 166, 0.08) 100%); border: 1.5px solid var(--accent); margin-bottom: 20px;">
+  <div class="plan-top" style="align-items: center;">
+    <div>
+      <span class="tag" style="background: var(--accent); color: white;">💻 Hands-on Practical Lab</span>
+      <h3 style="margin: 6px 0 2px;">
+        {% if c.is_practical_lab %}
+          Dedicated Coding Space & Practical Experiments
+        {% else %}
+          Companion Practical Lab & Coding Space Available
+        {% endif %}
+      </h3>
+      <p class="small muted" style="margin:0;">
+        {% if c.is_practical_lab %}
+          Run Python/SQL/JS code directly in the sandbox, solve practical problem sets, and get line-by-line feedback from the AI Examiner.
+        {% else %}
+          This subject includes an automatically created practical lab with live execution, problem sets, and AI code review.
+        {% endif %}
+      </p>
+    </div>
+    <div>
+      {% if c.is_practical_lab %}
+        <a href="{{ url_for('school.lab_workspace', cid=c.id) }}" class="btn primary" style="white-space: nowrap;">🚀 Open Coding Space</a>
+      {% elif c.practical_course_id %}
+        <a href="{{ url_for('school.lab_workspace', cid=c.practical_course_id) }}" class="btn primary" style="white-space: nowrap;">🚀 Open Companion Lab</a>
+      {% else %}
+        <a href="{{ url_for('school.lab_workspace', cid=c.id) }}" class="btn primary" style="white-space: nowrap;">🚀 Open Coding Space</a>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endif %}
+
+<div class="tabs" role="tablist">
+  <button type="button" class="tab active" data-tab="roadmap" role="tab">Syllabus</button>
+  <button type="button" class="tab" data-tab="schedule" role="tab">Schedule</button>
+  <button type="button" class="tab" data-tab="progress" role="tab">Progress</button>
+  <button type="button" class="tab" data-tab="materials" role="tab">My materials</button>
+  {% if c.is_practical or c.is_practical_lab or c.practical_course_id %}
+  <a href="{{ url_for('school.lab_workspace', cid=c.id if c.is_practical_lab else (c.practical_course_id or c.id)) }}" class="tab" style="text-decoration:none; color:var(--accent); font-weight:700;">💻 Coding Space</a>
+  {% endif %}
+</div>
+
+<section data-panel="roadmap">
+  {% if c.roadmap %}
+  <article class="panel mb-3" style="background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%); border: 1.5px solid var(--accent); margin-bottom: 20px;">
+    <div class="plan-top mb-2">
+      <div>
+        <span class="tag" style="background: var(--accent); color: white;">🗺️ Complete Learning Roadmap</span>
+        <h2 style="margin: 6px 0 2px;">Subject Mastery Progression (Beginning to Advanced)</h2>
+        <p class="small muted">Chapter-wise structured curriculum from foundational prerequisites to advanced synthesis.</p>
+      </div>
+    </div>
+    {% if c.roadmap.phases %}
+    <div class="roadmap-phases-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px;">
+      {% for ph in c.roadmap.phases %}
+      <div style="background: var(--surface); padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line);">
+        <span class="score-badge" style="background: var(--accent-soft); color: var(--accent-dark); font-size: 0.75rem;">Phase {{ ph.phase }}</span>
+        <strong style="display: block; margin: 4px 0 2px; font-size: 0.95rem;">{{ ph.name }}</strong>
+        <p class="small muted" style="margin: 0;">{{ ph.goal }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if c.roadmap.prerequisites %}
+    <div style="margin-top: 12px;">
+      <span class="small muted"><strong>Prerequisites:</strong> {{ c.roadmap.prerequisites|join(' · ') }}</span>
+    </div>
+    {% endif %}
+    {% if c.roadmap.learning_outcomes %}
+    <div style="margin-top: 6px;">
+      <span class="small muted"><strong>Key Outcomes:</strong> {{ c.roadmap.learning_outcomes|join(' · ') }}</span>
+    </div>
+    {% endif %}
+  </article>
+  {% endif %}
+
+  <ol class="roadmap">
+    {% for m in c.modules %}
+    <li class="module">
+      <div class="module-head">
+        <h3>{{ m.title }}</h3>
+        <span class="tag level-{{ m.level|lower }}">{{ m.level }}</span>
+      </div>
+      {% if m.goal %}<p class="muted">{{ m.goal }}</p>{% endif %}
+      <ul class="topic-list">
+        {% for t in m.topics %}
+        <li>
+          <a href="{{ url_for('learn_page', cid=c.id, tid=t.id) }}">{{ t.title }}</a>
+          <span class="small muted">{{ t.minutes }} min</span>
+          <span class="small state {{ 'is-done' if t.status == 'done' else '' }}">{{ topic_state(t) }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section data-panel="schedule" hidden>
+  <div class="row-between">
+    <h2>Day by day</h2>
+    <button class="btn" type="button" data-action="schedule">{{ 'Re-plan schedule' if c.schedule else 'Plan my schedule' }}</button>
+  </div>
+  {% if not c.schedule %}
+    <p class="muted">No schedule yet. Use the button to plan one.</p>
+  {% endif %}
+  {% for day in c.schedule %}
+  <article class="day {{ 'current' if today and today.day == day.day else '' }}">
+    <h3>Day {{ day.day }}, {{ day.date|pretty_date }}</h3>
+    {% if day.focus %}<p class="muted small">{{ day.focus }}</p>{% endif %}
+    <ul class="task-list">
+      {% for it in day["items"] %}
+      <li class="{{ 'done' if it.done else '' }}">
+        <a href="{{ item_url(c, it) }}">{{ it.title }}</a>
+        <span class="small muted">{{ it.minutes }} min{% if it.done %}, done{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </article>
+  {% endfor %}
+</section>
+
+<section data-panel="progress" hidden>
+  <div class="row-between">
+    <h2>Mastery by topic</h2>
+    <a class="btn" href="{{ url_for('test_page', cid=c.id) }}">Take a test</a>
+  </div>
+  {% if stats.weak %}
+  <p class="warn-box">Weak topics (below 60%): {% for t in stats.weak %}<a href="{{ url_for('learn_page', cid=c.id, tid=t.id) }}">{{ t.title }}</a>{{ ', ' if not loop.last }}{% endfor %}.</p>
+  {% endif %}
+  <table class="table">
+    <thead><tr><th>Topic</th><th>Status</th><th class="col-bar">Mastery</th></tr></thead>
+    <tbody>
+      {% for m in c.modules %}{% for t in m.topics %}
+      <tr>
+        <td><a href="{{ url_for('learn_page', cid=c.id, tid=t.id) }}">{{ t.title }}</a><div class="small muted">{{ m.title }}</div></td>
+        <td class="small">{{ 'Complete' if t.status == 'done' else 'Not complete' }}</td>
+        <td class="col-bar">
+          {% if t.mastery is not none %}
+          <div class="bar {{ 'weak' if t.mastery < 60 else '' }}"><span style="width: {{ t.mastery }}%"></span></div>
+          <span class="small">{{ t.mastery }}%</span>
+          {% else %}<span class="small muted">Not tested</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section data-panel="materials" hidden>
+  <h2>My study materials</h2>
+  <p class="muted">Upload a textbook, lecture notes or a question paper (PDF, TXT or MD). Lessons and answers then use your own material and show where each point came from.</p>
+  <form id="upload-form" class="inline-form">
+    <input type="file" name="file" accept=".pdf,.txt,.md" required>
+    <button class="btn primary" type="submit">Upload</button>
+  </form>
+  {% if materials %}
+  <ul class="plain-list">
+    {% for m in materials %}
+    <li>
+      <span>{{ m.name }} <span class="small muted">{{ m.pages }} page{{ 's' if m.pages != 1 }}, {{ m.chunks }} sections</span></span>
+      <button class="btn quiet" type="button" data-remove-material="{{ m.id }}">Remove</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nothing uploaded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>window.COURSE_ID = {{ c.id|tojson }};</script>
+<script src="{{ url_for('static', filename='js/course.js', v=asset_v) }}"></script>
+{% endblock %}

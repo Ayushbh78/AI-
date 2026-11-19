@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Set up your study profile - AI विद्यालय{% endblock %}
+{% block content %}
+<section class="onb" id="onb">
+  <header class="onb-head">
+    <h1 id="onb-title">Welcome, {{ user.name }}</h1>
+    <p class="muted" id="onb-sub">Tell us what you study. We will suggest the right subjects, you pick the ones you want, and we build a complete study plan with lessons, quizzes and progress records.</p>
+    <ol class="onb-steps" id="onb-steps" aria-label="Steps">
+      <li data-s="1" class="on"><b>1</b><span>About you</span></li>
+      <li data-s="2"><b>2</b><span>Details</span></li>
+      <li data-s="3"><b>3</b><span>Study plan</span></li>
+      <li data-s="4"><b>4</b><span>Subjects</span></li>
+    </ol>
+  </header>
+
+  <div class="panel onb-card" data-step="1">
+    <h2>What are you studying right now?</h2>
+    <div class="stage-grid" id="stage-grid">
+      {% for s in catalog %}
+      <button type="button" class="stage-card" data-stage="{{ s.id }}">
+        <span class="stage-icon">{{ s.icon }}</span>
+        <strong>{{ s.label }}</strong>
+        <span class="muted small">{{ s.blurb }}</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% if not profile.get('onboarded') %}<p class="center"><button type="button" class="link-btn" id="skip-btn">Skip for now</button></p>{% endif %}
+  </div>
+
+  <div class="panel onb-card" data-step="2" hidden>
+    <h2 id="detail-title">Tell us more</h2>
+    <p class="muted small">Pick from the list or type your own. The more exact you are, the better the suggested subjects.</p>
+    <form id="detail-form" class="detail-grid" autocomplete="off"></form>
+    <label class="field">Your goal (optional)
+      <input type="text" id="goal" maxlength="200" placeholder="For example: score 90% in boards, crack GATE, pass all semesters">
+    </label>
+    <p id="detail-error" class="error" hidden></p>
+    <div class="btn-row spread"><button type="button" class="btn" data-back-step="1">Back</button><button type="button" class="btn primary" id="to-plan">Next</button></div>
+  </div>
+
+  <div class="panel onb-card" data-step="3" hidden>
+    <h2>Your study plan</h2>
+    <div class="detail-grid">
+      <label class="field">Study time per day (all subjects together)
+        <select id="daily-hours">
+          <option value="1">1 hour</option><option value="1.5">1.5 hours</option><option value="2" selected>2 hours</option>
+          <option value="3">3 hours</option><option value="4">4 hours</option><option value="6">6 hours</option>
+        </select>
+      </label>
+      <label class="field">Plan length
+        <select id="plan-days">
+          <option value="30">30 days</option><option value="60" selected>60 days</option><option value="90">90 days</option>
+          <option value="120">120 days</option><option value="180">6 months</option><option value="365">1 year</option>
+        </select>
+      </label>
+    </div>
+    <p id="plan-error" class="error" hidden></p>
+    <div class="btn-row spread"><button type="button" class="btn" data-back-step="2">Back</button><button type="button" class="btn primary" id="to-subjects">Find my subjects</button></div>
+  </div>
+
+  <div class="panel onb-card" data-step="4" hidden>
+    <div class="subj-head">
+      <div>
+        <h2>Choose your subjects</h2>
+        <p class="muted small" id="subj-summary"></p>
+      </div>
+      <button type="button" class="btn small-btn" id="refresh-subjects" title="Ask the AI for a fresh list">↻ New suggestions</button>
+    </div>
+    <div id="subj-loading" class="loading-box"><span class="spinner"></span><span id="subj-loading-text">Finding the right subjects for you…</span></div>
+    <p id="subj-note" class="warn-box" hidden></p>
+    <div id="subj-list"></div>
+    <form id="custom-form" class="custom-add" autocomplete="off" hidden>
+      <input type="text" id="custom-name" maxlength="80" placeholder="Add your own subject, for example: Organic Chemistry">
+      <button type="submit" class="btn">Add</button>
+    </form>
+    <p id="subj-error" class="error" hidden></p>
+    <div class="enroll-bar" id="enroll-bar" hidden>
+      <span id="enroll-count">0 selected</span>
+      <div class="btn-row"><button type="button" class="btn" data-back-step="3">Back</button><button type="button" class="btn primary" id="enroll-btn">Enroll and build my plan</button></div>
+    </div>
+  </div>
+
+  <div class="panel onb-card" data-step="5" hidden>
+    <h2 id="build-title">Building your study plan…</h2>
+    <p class="muted small" id="build-sub">Each subject gets its own syllabus, lessons, quizzes and daily schedule. This takes about 10 to 20 seconds per subject, so please keep this page open.</p>
+    <ul class="build-list" id="build-list"></ul>
+    <div class="btn-row spread" id="build-actions" hidden>
+      <button type="button" class="btn" id="retry-btn" hidden>Retry failed</button>
+      <a class="btn primary" href="{{ url_for('school.study') }}">Go to My Study</a>
+    </div>
+  </div>
+</section>
+<script type="application/json" id="boot">{{ boot|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/onboarding.js', v=asset_v) }}"></script>{% endblock %}

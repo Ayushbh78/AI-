@@ -1,0 +1,15 @@
+{# Exam + paper chooser used on the Exams page and on the Exam Paper page. Filled in by static/js/examtools.js #}
+{% macro exam_picker(id) -%}
+<div class="ex-picker" id="{{ id }}">
+  <div class="ex-cards" data-cards role="radiogroup" aria-label="Exam"></div>
+  <label class="field" data-paper-wrap><span data-paper-label>Paper / branch</span>
+    <select data-paper aria-label="Paper or branch"></select>
+  </label>
+  <div data-custom hidden>
+    <label class="field">Exam name<input type="text" data-custom-name maxlength="80" placeholder="e.g. UPSC CSE Prelims, SSC CGL, CUET"></label>
+    <label class="field">Paper / stream (optional)<input type="text" data-custom-paper maxlength="60" placeholder="e.g. Paper 1"></label>
+  </div>
+  <button type="button" class="btn primary wide" data-load>📚 Load syllabus and pattern</button>
+  <p class="muted small ex-status" data-status role="status"></p>
+</div>
+{%- endmacro %}

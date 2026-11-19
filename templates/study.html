@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_url %}
+{% block title %}My Study - AI विद्यालय{% endblock %}
+{% block content %}
+{% set o = data.overall %}{% set a = data.activity %}
+<section class="study-head">
+  <div>
+    <h1>{{ tr('Welcome') }}, {{ user.name }}</h1>
+    {% if badge %}<p class="profile-chip">🎓 {{ badge }}</p>{% elif not profile.get('onboarded') %}<p class="muted">Tell us what you study to get a personal study plan.</p>{% endif %}
+  </div>
+  <div class="head-actions">
+    <a class="btn" href="{{ url_for('school.welcome', mode='edit') }}">{{ tr('Edit profile') }}</a>
+    <a class="btn primary" href="{{ url_for('school.welcome', mode='subjects') if profile.get('onboarded') else url_for('school.welcome') }}">+ {{ tr('Add subjects') }}</a>
+  </div>
+</section>
+
+<section class="stat-row">
+  <div class="stat ring-stat">
+    <div class="ring" style="--p: {{ o.percent }}"><span>{{ o.percent }}%</span></div>
+    <div class="ring-text"><span class="muted small">{{ tr('Overall progress') }}</span><strong>{{ o.done }} of {{ o.total }} topics</strong></div>
+  </div>
+  <div class="stat"><span class="muted small">🔥 {{ tr('Study streak') }}</span><strong>{{ a.streak }} day{{ 's' if a.streak != 1 }}</strong></div>
+  <div class="stat"><span class="muted small">⏱ {{ tr('This week') }}</span><strong>{{ a.week_minutes|mins }}</strong></div>
+  <div class="stat"><span class="muted small">🎯 {{ tr('Average mastery') }}</span><strong>{% if o.mastery is not none %}{{ o.mastery }}% <span class="grade g-{{ o.grade|replace('+','p') }}">{{ o.grade }}</span>{% else %}-{% endif %}</strong></div>
+</section>
+
+{% if not data.rows %}
+<section class="panel empty-big">
+  <div class="big-emoji">🎓</div>
+  <h2>Your study plan starts here</h2>
+  <p class="muted">Choose your subjects and we build a syllabus, daily schedule, lessons and quizzes for each one. Your progress is saved every time.</p>
+  <a class="btn primary" href="{{ url_for('school.welcome', mode='subjects') if profile.get('onboarded') else url_for('school.welcome') }}">{{ 'Choose my subjects' if profile.get('onboarded') else 'Set up my profile' }}</a>
+</section>
+{% else %}
+
+<h2 class="sec-title">{{ tr("Today's plan") }}</h2>
+<section class="plan-grid">
+  {% for r in data.rows if r.day %}
+  {% set c = r.course %}
+  <article class="panel plan-card">
+    <div class="plan-top"><h3><a href="{{ url_for('course_page', cid=c.id) }}">{{ c.subject }}</a></h3><span class="small muted">Day {{ r.day.day }} of {{ c.schedule|length }}</span></div>
+    {% if r.day.focus %}<p class="small muted">{{ r.day.focus }}</p>{% endif %}
+    {% if r.next_item %}
+    <a class="next-task" href="{{ item_url(c, r.next_item) }}"><span class="small muted">Next up · {{ r.next_item.minutes }} min</span><strong>{{ r.next_item.title }}</strong></a>
+    {% endif %}
+    <details class="day-tasks">
+      <summary>Today's tasks ({{ r.day["items"]|selectattr('done')|list|length }}/{{ r.day["items"]|length }} done)</summary>
+      <ul class="task-list">
+        {% for it in r.day["items"] %}
+        <li class="{{ 'done' if it.done else '' }}"><a href="{{ item_url(c, it) }}">{{ it.title }}</a><span class="small muted">{{ it.minutes }} min</span></li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% if r.next_item %}<a class="btn primary wide" href="{{ item_url(c, r.next_item) }}">▶ Start</a>{% endif %}
+  </article>
+  {% endfor %}
+  {% if not (data.rows|selectattr('day')|list) %}
+  <article class="panel"><h3>All planned work is done 🎉</h3><p class="muted">Take a test in any subject below, or add a new subject.</p></article>
+  {% endif %}
+</section>
+
+<h2 class="sec-title">{{ tr('My subjects') }}</h2>
+<section class="subject-grid">
+  {% for r in data.rows %}
+  {% set c = r.course %}
+  <article class="panel subject-card">
+    <div class="plan-top"><h3><a href="{{ url_for('course_page', cid=c.id) }}">{{ c.subject }}</a></h3>
+      {% if r.grade != '-' %}<span class="grade g-{{ r.grade|replace('+','p') }}" title="Grade from your quiz mastery">{{ r.grade }}</span>{% endif %}</div>
+    <p class="muted small">{{ c.school.program if c.school and c.school.program else (c.level|level_label) }}</p>
+    <div class="bar"><span style="width: {{ r.stats.percent }}%"></span></div>
+    <p class="small">{{ r.stats.done }} of {{ r.stats.total }} topics{% if r.stats.mastery is not none %} · mastery {{ r.stats.mastery }}%{% endif %}{% if r.finished %} · finished{% endif %}</p>
+    <a class="btn wide" href="{{ item_url(c, r.next_item) if r.next_item else url_for('course_page', cid=c.id) }}">{{ tr('Continue') }}</a>
+  </article>
+  {% endfor %}
+</section>
+
+<div class="two-col">
+  <section class="panel">
+    <h2>Study time, last 14 days</h2>
+    {% set peak = [60, a.last14|map(attribute='minutes')|max]|max %}
+    <div class="bars" role="img" aria-label="Minutes studied per day">
+      {% for d in a.last14 %}
+      <div class="bar-col" title="{{ d.day }}: {{ d.minutes }} min"><div class="bar-fill {{ 'zero' if not d.minutes }}" style="height: {{ (100 * d.minutes / peak)|round|int }}%"></div><span>{{ d.label }}</span></div>
+      {% endfor %}
+    </div>
+    <p class="small muted">Total so far: {{ a.total_minutes|mins }} across {{ a.active_days }} study day{{ 's' if a.active_days != 1 }}. Time is counted when you complete topics and quizzes.</p>
+  </section>
+  <section class="panel">
+    <h2>{{ tr('Recent activity') }}</h2>
+    {% if a.recent %}
+    <ul class="timeline">
+      {% for e in a.recent[:7] %}
+      <li><span class="dot k-{{ e.kind }}"></span><div><strong>{{ e.title }}</strong><span class="small muted">{{ e.t|when }}{% if e.score is not none %} · {{ e.score }}%{% endif %}{% if e.course %} · {{ e.course }}{% endif %}</span></div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nothing yet. Complete a topic or take a quiz and it shows up here.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel mb-3 mt-3" style="background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%); border: 1.5px solid var(--accent);">
+  <div class="plan-top">
+    <div>
+      <span class="tag" style="background: var(--accent); color: white;">AI Learning Hub</span>
+      <h2 style="margin: 6px 0 4px;">🧠 Adaptive Learning & Book Teacher</h2>
+      <p class="small muted">Practice targeted weak spots with AI-calibrated questions or learn directly from indexed textbooks.</p>
+    </div>
+    <div class="btn-row" style="margin-top: 0;">
+      <a class="btn primary small-btn" href="{{ url_for('school.lab_hub') }}">💻 Coding Lab</a>
+      <a class="btn small-btn" href="{{ url_for('school.adaptive_page') }}">🧠 Adaptive Hub</a>
+      <a class="btn small-btn" href="{{ url_for('school.books_page') }}">📖 Book Teacher</a>
+    </div>
+  </div>
+</section>
+
+{% if data.weak %}
+<section class="panel warn-panel">
+  <h2>Needs more practice</h2>
+  <ul class="plain-list">
+    {% for c, t in data.weak %}<li><a href="{{ url_for('learn_page', cid=c.id, tid=t.id) }}">{{ t.title }}</a><span class="small muted">{{ c.subject }} · {{ t.mastery }}%</span></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>{{ tr('Badges') }}</h2>
+  <div class="badge-grid">
+    {% for b in data.badges %}<div class="badge {{ 'on' if b.earned }}" title="{{ b.how }}"><span>{{ b.icon }}</span><strong>{{ b.name }}</strong><small>{{ b.how }}</small></div>{% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

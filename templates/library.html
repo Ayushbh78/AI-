@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Library - AI विद्यालय{% endblock %}
+{% block content %}
+<section class="tool-head"><h1>🔖 {{ tr('Library') }}</h1>
+  <p class="muted">Everything you generate is saved here: notes, book summaries and exam papers. Star the ones you want to keep.</p></section>
+<div class="lib-bar">
+  <input type="search" id="lib-search" placeholder="Search your library…" aria-label="Search">
+  <div class="seg" id="lib-filter" data-seg="filter">
+    <button type="button" class="seg-btn on" data-value="all">All</button>
+    <button type="button" class="seg-btn" data-value="notes">📝 Notes</button>
+    <button type="button" class="seg-btn" data-value="book">📖 Books</button>
+    <button type="button" class="seg-btn" data-value="paper">📄 Papers</button>
+    <button type="button" class="seg-btn" data-value="star">⭐ Saved</button>
+  </div>
+</div>
+<div id="lib-list" class="lib-list"></div>
+<div class="empty-big panel" id="lib-empty" hidden><div class="big-emoji">🔖</div><h2>Nothing here yet</h2>
+  <p class="muted">Generate notes, a book summary or an exam paper and it is saved automatically.</p>
+  <div class="btn-row center-row"><a class="btn primary" href="{{ url_for('school.notes_page') }}">Make notes</a><a class="btn" href="{{ url_for('school.exam_page') }}">Make a paper</a></div></div>
+
+<div class="modal" id="lib-modal" role="dialog" aria-modal="true" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-box wide">
+    <div class="modal-head"><h2 id="lib-title"></h2><button type="button" class="modal-x" data-close aria-label="Close">&times;</button></div>
+    <div class="out-actions">
+      <button type="button" class="btn small-btn" id="lib-copy">Copy</button>
+      <button type="button" class="btn small-btn" onclick="window.print()">🖨 Print / PDF</button>
+      <button type="button" class="btn small-btn" id="act-answers" hidden>Show answers</button>
+    </div>
+    <article class="prose out-body" id="out-body"></article>
+  </div>
+</div>
+<script type="application/json" id="lib-data">{{ items|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/tools.js', v=asset_v) }}"></script>{% endblock %}

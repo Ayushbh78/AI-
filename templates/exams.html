@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_exam_picker.html" import exam_picker %}
+{% from "_tools.html" import seg %}
+{% block title %}Exams - AI विद्यालय{% endblock %}
+{% block content %}
+<section class="tool-head"><h1>🎯 Exams</h1>
+  <p class="muted">Pick GATE, JEE, NEET, CAT or any exam. The app reads the official syllabus and pattern from the web, builds your subjects, topics and day-by-day study plan, and gives you real exam-style mock tests.</p></section>
+{% if not ctx.has_ai %}<p class="warn-box">The AI key is not set on the server yet, so syllabus and papers cannot be prepared.</p>{% endif %}
+{% if ctx.has_ai and not ctx.has_web %}<p class="warn-box">No Tavily key is set, so the built-in syllabus (or AI knowledge) is used instead of the live official pages.</p>{% endif %}
+
+<section class="panel ex-step">
+  <h2 class="ex-h">1. Choose your exam</h2>
+  {{ exam_picker('picker') }}
+</section>
+
+<div id="ex-result" hidden>
+  <section class="panel ex-step" id="ex-overview"></section>
+
+  <section class="panel ex-step">
+    <h2 class="ex-h">2. Subjects and topics</h2>
+    <p class="muted small">Open a subject to see its topics. Use "Take subject test" for a short exam-style test on that subject, sized like its share of the real paper.</p>
+    <div id="ex-subjects"></div>
+  </section>
+
+  <section class="panel ex-step">
+    <h2 class="ex-h">3. Make my study plan</h2>
+    <p class="muted small">Every subject becomes a module and every syllabus topic a lesson, scheduled day by day with revision and a final test.</p>
+    <div class="two-fields">
+      <label class="field">Days to prepare
+        <select id="plan-days">{% for d in (30, 60, 90, 120, 180, 270, 365) %}<option value="{{ d }}" {{ 'selected' if d == (profile.plan_days or 90) or (d == 90 and not profile.plan_days) }}>{{ d }} days</option>{% endfor %}</select></label>
+      <label class="field">Study hours per day
+        <select id="plan-hours">{% for h in (1, 2, 3, 4, 5, 6, 8) %}<option value="{{ h }}" {{ 'selected' if h == 3 }}>{{ h }} hour{{ 's' if h > 1 }}</option>{% endfor %}</select></label>
+    </div>
+    <button type="button" class="btn primary wide" id="plan-btn">🗓️ Prepare my study plan</button>
+    <p class="muted small" id="plan-status" role="status"></p>
+  </section>
+
+  <section class="panel ex-step">
+    <h2 class="ex-h">4. Full mock test</h2>
+    <p class="muted small">A complete paper in the real pattern: same number of questions, marks, question types, negative marking and time.</p>
+    <div class="field">Difficulty{{ seg('ex-diff', [('easy','Easy'),('medium','Medium'),('hard','Hard')], 'medium') }}</div>
+    <button type="button" class="btn primary wide" id="mock-btn">📝 Generate full mock paper</button>
+  </section>
+</div>
+
+<div id="gen-box" class="ex-gen" hidden></div>
+<div id="my-papers-wrap" hidden><section class="panel ex-step"><h2 class="ex-h">My exam papers</h2><div id="my-papers"></div></section></div>
+<script type="application/json" id="exam-catalog">{{ ctx.catalog | tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/examtools.js', v=asset_v) }}"></script>{% endblock %}

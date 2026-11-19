@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  {% block headscripts %}{% endblock %}
+  <title>{% block title %}AI विद्यालय{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_v) }}">
+</head>
+<body class="{% block bodyclass %}{% endblock %}{{ ' has-nav' if user }}">
+  <header class="topbar">
+    <div class="topbar-in">
+      <div class="topbar-left">
+        <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">वि</span>AI विद्यालय</a>
+      </div>
+      {% if user %}
+      <div class="topbar-right">
+        <div class="profile" id="profile">
+          <button type="button" class="avatar" id="avatar-btn" aria-haspopup="true" aria-expanded="false" aria-label="Profile menu">{{ user.name[:1]|upper }}</button>
+          <div class="profile-menu" id="profile-menu" hidden>
+            <div class="profile-name"><strong>{{ user.name }}</strong>{% if user.email %}<span class="muted small">{{ user.email }}</span>{% endif %}</div>
+            <a class="menu-link" href="{{ url_for('school.welcome', mode='edit') }}">My profile</a>
+            <a class="menu-link" href="{{ url_for('school.progress') }}">Report card</a>
+            <div class="store-line {{ 'ok' if db_on else 'warn' }}">{{ '☁️ All your data is saved in the database' if db_on else '💾 Saved on this server only' }}</div>
+            <button type="button" class="menu-item" id="logout-btn">Log out</button>
+          </div>
+        </div>
+      </div>
+      <nav class="topnav" aria-label="Main">
+        {% set ep = request.endpoint %}
+        <a href="{{ url_for('index') }}" class="{{ 'on' if ep == 'index' }}"><span class="ni">🏠</span>{{ tr('Home') }}</a>
+        <a href="{{ url_for('school.study') }}" class="{{ 'on' if ep == 'school.study' }}"><span class="ni">🎓</span>{{ tr('My Study') }}</a>
+        <a href="{{ url_for('exams.exams_page') }}" class="{{ 'on' if ep == 'exams.exams_page' }}"><span class="ni">🎯</span>{{ tr('Exams') }}</a>
+        <a href="{{ url_for('school.books_page') }}" class="{{ 'on' if ep == 'school.books_page' }}"><span class="ni">📖</span>{{ tr('Book Teacher') }}</a>
+        <a href="{{ url_for('school.lab_hub') }}" class="{{ 'on' if ep in ('school.lab_hub', 'school.lab_workspace') }}"><span class="ni">💻</span>{{ tr('Coding Lab') }}</a>
+        <a href="{{ url_for('school.adaptive_page') }}" class="{{ 'on' if ep == 'school.adaptive_page' }}"><span class="ni">🧠</span>{{ tr('Adaptive Learning') }}</a>
+        <a href="{{ url_for('school.notes_page') }}" class="{{ 'on' if ep == 'school.notes_page' }}"><span class="ni">📝</span>{{ tr('Notes') }}</a>
+        <a href="{{ url_for('school.exam_page') }}" class="{{ 'on' if ep == 'school.exam_page' }}"><span class="ni">📄</span>{{ tr('Exam Paper') }}</a>
+        <a href="{{ url_for('school.progress') }}" class="{{ 'on' if ep == 'school.progress' }}"><span class="ni">📊</span>{{ tr('Progress') }}</a>
+        <a href="{{ url_for('school.library_page') }}" class="{{ 'on' if ep == 'school.library_page' }}"><span class="ni">🔖</span>{{ tr('Library') }}</a>
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    /* Phones: --app-h = the really visible height (browser bars and keyboard change it),
+       --head-h = the real height of the top bar (it wraps to two rows on phones). */
+    (function () {
+      var root = document.documentElement, vv = window.visualViewport;
+      var baseH = Math.max(window.innerHeight, (vv && vv.height) || 0);
+      function setH() {
+        var h = Math.round((vv && vv.height) || window.innerHeight);
+        var typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+        if (!typing) baseH = Math.max(window.innerHeight, h);            // remember the height without the keyboard
+        root.classList.toggle("kb-open", !!typing && h < baseH - 140 && window.innerWidth <= 900);
+        root.style.setProperty("--app-h", Math.round((vv && vv.height) || window.innerHeight) + "px");
+        var bar = document.querySelector(".topbar");
+        if (bar) root.style.setProperty("--head-h", Math.round(bar.getBoundingClientRect().height) + "px");
+      }
+      var queued = false, setHNow = setH;
+      setH = function () {                      // many resize events in a row (browser bar sliding) cost one update, not dozens
+        if (queued) return;
+        queued = true;
+        (window.requestAnimationFrame || setTimeout)(function () { queued = false; setHNow(); });
+      };
+      setHNow();
+      window.addEventListener("resize", setH);
+      window.addEventListener("orientationchange", function () { setTimeout(setH, 200); });
+      window.addEventListener("load", setH);
+      document.addEventListener("focusin", function () { setTimeout(setH, 250); });
+      document.addEventListener("focusout", function () { setTimeout(setH, 250); });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(setH);
+      if (vv) {
+        vv.addEventListener("resize", function () { setH(); if (document.body.classList.contains("chat-open")) window.scrollTo(0, 0); });
+      }
+      if (window.ResizeObserver) { var bar = document.querySelector(".topbar"); if (bar) new ResizeObserver(setH).observe(bar); }
+    })();
+  </script>
+  {% if user %}
+  {% set ep2 = request.endpoint %}
+  <nav class="bottomnav" aria-label="Main">
+    <a href="{{ url_for('index') }}" class="{{ 'on' if ep2 == 'index' }}"><span class="bi">🏠</span><span>{{ tr('Home') }}</span></a>
+    <a href="{{ url_for('school.study') }}" class="{{ 'on' if ep2 == 'school.study' }}"><span class="bi">🎓</span><span>{{ tr('My Study') }}</span></a>
+    <a href="{{ url_for('school.notes_page') }}" class="{{ 'on' if ep2 == 'school.notes_page' }}"><span class="bi">📝</span><span>{{ tr('Notes') }}</span></a>
+    <a href="{{ url_for('school.books_page') }}" class="{{ 'on' if ep2 == 'school.books_page' }}"><span class="bi">📖</span><span>{{ tr('Books') }}</span></a>
+    <button type="button" id="more-btn" class="{{ 'on' if ep2 in ('exams.exams_page', 'school.lab_hub', 'school.lab_workspace', 'school.adaptive_page', 'school.exam_page', 'school.progress', 'school.library_page') }}" aria-haspopup="true" aria-expanded="false"><span class="bi">⋯</span><span>More</span></button>
+  </nav>
+  <div class="more-sheet" id="more-sheet" hidden>
+    <div class="more-backdrop" data-more-close></div>
+    <div class="more-box">
+      <a href="{{ url_for('exams.exams_page') }}"><span class="bi">🎯</span>{{ tr('Exams (GATE, JEE …)') }}</a>
+      <a href="{{ url_for('school.lab_hub') }}"><span class="bi">💻</span>{{ tr('Coding Lab') }}</a>
+      <a href="{{ url_for('school.adaptive_page') }}"><span class="bi">🧠</span>{{ tr('Adaptive Learning') }}</a>
+      <a href="{{ url_for('school.exam_page') }}"><span class="bi">📄</span>{{ tr('Exam Paper') }}</a>
+      <a href="{{ url_for('school.progress') }}"><span class="bi">📊</span>{{ tr('Progress') }}</a>
+      <a href="{{ url_for('school.library_page') }}"><span class="bi">🔖</span>{{ tr('Library') }}</a>
+    </div>
+  </div>
+  {% endif %}
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="{{ url_for('static', filename='js/common.js', v=asset_v) }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Exam hall - AI विद्यालय{% endblock %}
+{% block content %}
+<script>document.body.classList.add("hall");</script>
+<div id="hall" data-pid="{{ pid }}" data-name="{{ user_name }}">
+
+  <!-- Instructions (like the real exam: read, tick, then begin) -->
+  <section id="h-intro" class="h-intro">
+    <div class="h-card">
+      <p class="h-kicker">Exam hall</p>
+      <h1 id="i-title">{{ title }}</h1>
+      <p class="muted">Candidate: <b>{{ user_name }}</b></p>
+      <div id="i-body"><p class="muted">Loading the paper…</p></div>
+    </div>
+  </section>
+
+  <!-- The exam itself -->
+  <section id="h-exam" class="h-exam" hidden>
+    <header class="h-top">
+      <div class="h-title" id="h-exam-title"></div>
+      <div class="h-timer" id="h-timer-wrap">Time left <b id="h-timer">--:--:--</b></div>
+      <div class="h-tools">
+        <button type="button" id="h-calc" title="Calculator" aria-label="Calculator">🧮</button>
+        <button type="button" id="h-instr" title="Instructions" aria-label="Instructions">ℹ️</button>
+        <button type="button" id="h-full" title="Full screen" aria-label="Full screen">⛶</button>
+        <button type="button" id="h-pal-btn" class="h-pal-btn" aria-label="Question palette">☰ <span id="h-pal-count"></span></button>
+      </div>
+    </header>
+    <div class="h-fsbar" id="h-fsbar" hidden>You left full screen. <button type="button" id="h-fsback">Return to full screen</button></div>
+    <nav class="h-sections" id="h-sections" aria-label="Sections"></nav>
+    <div class="h-body">
+      <main class="h-q" id="h-q" aria-live="polite"></main>
+      <div class="h-pal-back" id="h-pal-back"></div>
+      <aside class="h-pal" id="h-pal" aria-label="Question palette">
+        <button type="button" class="h-pal-close" id="h-pal-close">✕ Close palette</button>
+        <div class="h-cand"><span class="h-avatar">{{ user_name[:1]|upper }}</span><b>{{ user_name }}</b></div>
+        <div class="h-legend" id="h-legend"></div>
+        <p class="h-palsec" id="h-palsec"></p>
+        <div class="h-grid" id="h-grid"></div>
+        <button type="button" class="h-submit" id="h-submit">Submit exam</button>
+      </aside>
+    </div>
+    <footer class="h-actions">
+      <button type="button" id="h-prev" aria-label="Previous question">◀ Back</button>
+      <button type="button" id="h-mark" title="Mark for Review and go to the next question">Mark &amp; Next</button>
+      <button type="button" id="h-clear" title="Clear Response">Clear</button>
+      <button type="button" id="h-save" class="primary">Save &amp; Next ▶</button>
+    </footer>
+  </section>
+
+  <div class="h-modal" id="h-modal" hidden><div class="h-modal-box" id="h-modal-box"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/examhall.js', v=asset_v) }}"></script>{% endblock %}

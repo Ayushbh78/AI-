@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_tools.html" import seg, out_panel %}
+{% block title %}Topic Notes - AI विद्यालय{% endblock %}
+{% block content %}
+<section class="tool-head"><h1>📝 Topic Notes</h1>
+  <p class="muted">Type any topic and get exam-ready notes with examples, formulas and practice questions{% if ctx.has_web %}, checked against the web{% endif %}. Saved to your Library.</p></section>
+<div class="tool-grid">
+  <form class="panel tool-form" id="tool-form" data-tool="notes" autocomplete="off">
+    <label class="field">Topic or chapter
+      <input type="text" id="topic" maxlength="160" placeholder="e.g. Chemical Reactions and Equations" required>
+    </label>
+    <label class="field">Who are these notes for?
+      <input type="text" id="target" maxlength="140" value="{{ ctx.target }}" placeholder="e.g. Class 10 CBSE, B.Tech 2nd year, UPSC">
+    </label>
+    <div class="field">Style{{ seg('depth', [('quick','Quick revision'),('detailed','Detailed')], 'quick') }}</div>
+    <button class="btn primary wide" type="submit" id="go-btn">✨ Generate notes</button>
+    {% if ctx.ideas %}
+    <div class="ideas"><span class="muted small">From your subjects:</span>
+      {% for i in ctx.ideas %}<button type="button" class="chip" data-idea="{{ i.topic }}" title="{{ i.subject }}">{{ i.topic|truncate(40) }}</button>{% endfor %}
+    </div>{% endif %}
+    {% if not ctx.has_ai %}<p class="warn-box">The AI key is not set on the server yet, so notes cannot be generated.</p>{% endif %}
+  </form>
+  {{ out_panel('📝', 'Your notes will appear here.') }}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/tools.js', v=asset_v) }}"></script>{% endblock %}

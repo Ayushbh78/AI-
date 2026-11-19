@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% from "_tools.html" import seg, out_panel %}
+{% block title %}Book Teacher & Studio - AI विद्यालय{% endblock %}
+
+{% block content %}
+<section class="study-head">
+  <div>
+    <h1>📖 {{ tr('Book Teacher') }} & Studio</h1>
+    <p class="muted">RAG-powered textbook tutor: learn chapter-by-chapter from real books, attempt tests directly on the page, and get complete answers graded by AI.</p>
+  </div>
+  <div class="head-actions">
+    <button type="button" class="btn primary" id="btn-upload-modal">+ Upload PDF Book</button>
+  </div>
+</section>
+
+<!-- Studio Tabs: Book Teacher vs Summarizer -->
+<div class="seg mb-3" id="book-tabs" role="tablist">
+  <button type="button" class="seg-btn on" data-tab="teacher">👨‍🏫 RAG Book Teacher & Test</button>
+  <button type="button" class="seg-btn" data-tab="summarizer">📑 Book Summarizer</button>
+</div>
+
+<!-- ================= TAB 1: RAG BOOK TEACHER ================= -->
+<div id="tab-teacher" class="book-tab-pane">
+  <!-- 1. Books Carousel / Selector -->
+  <section class="panel mb-3">
+    <div class="plan-top mb-2">
+      <h3>Select a Book to Study</h3>
+      <span class="small muted" id="books-count-label">Loading library...</span>
+    </div>
+    <div class="book-picker-grid" id="book-picker-list">
+      <div class="loading-box"><span class="spinner"></span> Loading textbooks...</div>
+    </div>
+  </section>
+
+  <!-- 2. Active Book Studio -->
+  <div id="active-book-studio" hidden>
+    <!-- Book Header Banner -->
+    <article class="panel mb-3" id="active-book-card">
+      <div class="plan-top">
+        <div>
+          <span class="tag" id="ab-category">Textbook</span>
+          <h2 id="ab-title" style="margin: 6px 0 2px;">Book Title</h2>
+          <p class="small muted" id="ab-author">Author</p>
+        </div>
+        <div style="text-align: right;">
+          <button type="button" class="btn primary" id="btn-start-book-test">📝 Take Test on this Book</button>
+        </div>
+      </div>
+      <!-- Chapters Pills -->
+      <div class="mt-2">
+        <span class="small muted"><strong>Chapters & Units:</strong></span>
+        <div class="chip-row mt-1" id="ab-chapters"></div>
+      </div>
+    </article>
+
+    <!-- Teacher Console & Output Grid -->
+    <div class="tool-grid">
+      <!-- Teaching Console Form -->
+      <form class="panel tool-form" id="teacher-form" autocomplete="off">
+        <h3>👨‍🏫 Ask Your Book Teacher</h3>
+        <p class="small muted">The AI will retrieve passages from the book and teach you step-by-step.</p>
+
+        <div class="field">
+          Teaching Style
+          <div class="seg" id="teacher-mode-seg">
+            <button type="button" class="seg-btn on" data-mode="teach">🎓 Teach Topic</button>
+            <button type="button" class="seg-btn" data-mode="doubt">❓ Solve Doubt</button>
+            <button type="button" class="seg-btn" data-mode="socratic">🤔 Socratic</button>
+          </div>
+        </div>
+
+        <label class="field">
+          Topic, Chapter or Question
+          <input type="text" id="teacher-topic-input" maxlength="200" placeholder="e.g. Chemical Reactions, Displacement reactions, Ohm's law...">
+        </label>
+
+        <button class="btn primary wide" type="submit" id="btn-teach-submit">✨ Teach According to Book</button>
+      </form>
+
+      <!-- Teacher Output & Citations Panel -->
+      <div class="panel tool-out" id="teacher-out-panel">
+        <div id="teacher-empty" class="out-empty">
+          <div class="big-emoji">📖</div>
+          <h3>Your Book Lesson will appear here</h3>
+          <p class="muted">Pick a chapter above or type any topic to receive a tailored lecture with exact book page citations.</p>
+        </div>
+
+        <div id="teacher-loading" class="out-loading" hidden>
+          <span class="spinner"></span>
+          <p id="teacher-loading-text">Retrieving book passages and crafting your lesson…</p>
+        </div>
+
+        <div id="teacher-result" class="out-result" hidden>
+          <div class="plan-top mb-2">
+            <h3 id="lesson-topic-title">Lesson</h3>
+            <button type="button" class="small-btn btn" id="btn-copy-lesson">Copy</button>
+          </div>
+          <div class="out-body" id="teacher-body"></div>
+
+          <!-- Book Citations -->
+          <div class="citations-card mt-3" id="citations-wrap">
+            <h4>📖 Book Excerpts & Page Citations (RAG)</h4>
+            <div id="citations-list" class="citations-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- On-Page Book Test Section -->
+    <section class="panel mt-4" id="book-test-section" hidden>
+      <div class="plan-top mb-2">
+        <div>
+          <h2>📝 Interactive Book Test</h2>
+          <p class="muted">Attempt questions on the page. Multiple choice is checked instantly, and subjective written answers are graded line-by-line by the AI with marks, strengths, and model answers.</p>
+        </div>
+        <button type="button" class="btn" id="btn-close-test">Close Test</button>
+      </div>
+
+      <div id="test-loading" class="loading-box" hidden>
+        <span class="spinner"></span> Setting customized test from book passages...
+      </div>
+
+      <div id="test-runner-container"></div>
+    </section>
+  </div>
+</div>
+
+<!-- ================= TAB 2: BOOK SUMMARIZER ================= -->
+<div id="tab-summarizer" class="book-tab-pane" hidden>
+  <div class="tool-grid">
+    <form class="panel tool-form" id="tool-form" data-tool="books" autocomplete="off">
+      <div class="seg" data-seg="mode" role="tablist">
+        <button type="button" class="seg-btn on" data-value="name" role="tab">By book name</button>
+        <button type="button" class="seg-btn" data-value="file" role="tab">Upload a PDF</button>
+      </div>
+      <label class="field" id="title-wrap">Book title
+        <input type="text" id="book-title" maxlength="140" placeholder="e.g. Atomic Habits, Wings of Fire, Introduction to Algorithms">
+      </label>
+      <label class="field" id="file-wrap" hidden>Book file (PDF, TXT)
+        <input type="file" id="book-file" accept="application/pdf,.pdf,text/plain,.txt,text/markdown,.md">
+        <span class="muted small">Works for PDFs with selectable text, up to 25 MB.</span>
+      </label>
+      <label class="field">Author (optional)
+        <input type="text" id="author" maxlength="100" placeholder="e.g. James Clear">
+      </label>
+      <div class="field">Summary{{ seg('style', [('short','Short'),('chapterwise','Chapter-wise')], 'short') }}</div>
+      <button class="btn primary wide" type="submit" id="go-btn">✨ Summarize book</button>
+      {% if not ctx.has_ai %}<p class="warn-box">The AI key is not set on the server yet, so summaries cannot be generated.</p>{% endif %}
+    </form>
+    {{ out_panel('📖', 'Your book summary will appear here.') }}
+  </div>
+</div>
+
+<!-- Upload Book Modal -->
+<div class="modal" id="upload-modal" hidden>
+  <div class="modal-backdrop" id="upload-backdrop"></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Upload a Book for AI Teaching</h2>
+      <button type="button" class="modal-x" id="modal-upload-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="muted small">Upload your textbook or study notes (PDF, TXT, MD). Our RAG engine extracts and indexes every page so the Book Teacher can teach from it and evaluate your tests.</p>
+    <form id="upload-book-form">
+      <label class="field">Select Book File (PDF, TXT, MD)
+        <input type="file" id="modal-book-file" accept="application/pdf,.pdf,text/plain,.txt,text/markdown,.md">
+        <span class="muted small">Supports PDFs with readable text up to 25 MB.</span>
+      </label>
+      <label class="field">Book Title
+        <input type="text" id="modal-book-title" maxlength="140" placeholder="e.g. NCERT Chemistry Class 12 (optional)">
+      </label>
+      <label class="field">Author / Publisher (optional)
+        <input type="text" id="modal-book-author" placeholder="e.g. NCERT, Halliday & Resnick">
+      </label>
+      <div class="btn-row spread mt-3">
+        <button type="button" class="btn" id="modal-upload-cancel">Cancel</button>
+        <button type="submit" class="btn primary" id="modal-upload-submit">Index & Add Book</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.mb-2 { margin-bottom: 12px; }
+.mb-3 { margin-bottom: 18px; }
+.mt-1 { margin-top: 6px; }
+.mt-2 { margin-top: 12px; }
+.mt-3 { margin-top: 18px; }
+.mt-4 { margin-top: 24px; }
+.book-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 14px; margin-top: 8px; }
+.book-card { padding: 14px; border: 1.5px solid var(--line); border-radius: var(--radius); cursor: pointer; transition: all 0.2s; background: var(--surface); display: flex; flex-direction: column; justify-content: space-between; }
+.book-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.book-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+.book-card h4 { margin: 4px 0 2px; font-size: 1.05rem; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-chip { font-size: 0.82rem; padding: 4px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); cursor: pointer; transition: background 0.15s; }
+.ch-chip:hover { background: var(--accent-soft); border-color: var(--accent); }
+.citations-card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.citation-item { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 12px; margin-top: 8px; font-size: 0.88rem; }
+.citation-page { font-weight: 700; color: var(--accent-dark); font-size: 0.82rem; }
+.test-q-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.test-q-text { font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; }
+.test-sub-input { width: 100%; min-height: 110px; font-size: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; resize: vertical; margin-top: 8px; }
+.test-sub-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.eval-box { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 0.92rem; }
+.eval-box.ok { background: var(--ok-soft); border: 1px solid var(--ok); }
+.eval-box.warn { background: var(--warn-soft); border: 1px solid var(--warn); }
+.score-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.85rem; }
+.book-card, .ch-chip { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.book-card h4, .citation-item, .test-q-text { overflow-wrap: anywhere; }
+.chip-row { max-width: 100%; }
+@media (max-width: 640px) {
+  .book-picker-grid { grid-template-columns: 1fr; gap: 10px; }
+  .book-card { padding: 12px; }
+  .book-card:hover { transform: none; }
+  .mb-3 { margin-bottom: 12px; }
+  #book-tabs { display: flex; width: 100%; }
+  #book-tabs .seg-btn { flex: 1 1 0; font-size: 0.82rem; padding: 10px 6px; }
+  #active-book-card .plan-top { flex-direction: column; align-items: stretch; }
+  #active-book-card .plan-top > div:last-child { text-align: left !important; }
+  #btn-start-book-test { width: 100%; }
+  #teacher-mode-seg .seg-btn { font-size: 0.8rem; padding: 10px 6px; }
+  .test-q-card { padding: 12px; }
+  .test-q-text { font-size: 1rem; }
+  .test-sub-input { min-height: 96px; }
+  .ch-chip { padding: 8px 12px; font-size: 0.86rem; }
+  #test-runner-container .plan-top, #book-test-section > .plan-top { flex-wrap: wrap; }
+  .head-actions { width: 100%; }
+  .study-head > div:first-child > p.muted { display: none; }   /* long intro hidden on small screens: more room for the books */
+  #upload-book-form .btn-row { position: sticky; bottom: calc(-1 * env(safe-area-inset-bottom, 0px)); background: var(--surface); padding: 10px 0 4px; margin-top: 12px; }
+  #upload-modal .modal-box > p.muted { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tools.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/books.js', v=asset_v) }}"></script>
+{% endblock %}

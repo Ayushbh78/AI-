@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block bodyclass %}{{ 'home-page' if user else 'auth-page' }}{% endblock %}
+{% block headscripts %}{% if not user %}<script>
+  /* A saved login exists on this phone: hide the login form while we sign back in, so it never flashes. */
+  try { if (localStorage.getItem("vidyalaya_remember")) document.documentElement.classList.add("resuming"); } catch (e) {}
+</script>{% endif %}{% endblock %}
+{% block content %}
+{% if not user %}
+<div class="resume-splash" aria-live="polite"><div class="auth-logo">वि</div><span class="spinner"></span><p class="muted small">Signing you in…</p></div>
+<section class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">वि</div>
+    <h1 id="auth-title">Welcome back</h1>
+    <p class="muted" id="auth-sub">Log in with your email and password.</p>
+    <div class="auth-tabs" id="auth-tabs" role="tablist">
+      <button type="button" class="auth-tab active" data-auth-tab="login" role="tab">Log in</button>
+      <button type="button" class="auth-tab" data-auth-tab="signup" role="tab">Sign up</button>
+    </div>
+
+    <!-- 1. Log in: email + password -->
+    <form id="form-login" class="auth-form" data-view="login" autocomplete="on" novalidate>
+      <label class="field">Email
+        <input type="text" name="email" id="login-id" maxlength="150" placeholder="you@example.com" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">
+      </label>
+      <label class="field">Password
+        <span class="pw-wrap"><input type="password" name="password" id="login-pw" maxlength="64" placeholder="Your password" required autocomplete="current-password">
+        <button type="button" class="pw-toggle" data-for="login-pw" aria-label="Show password">Show</button></span>
+      </label>
+      <p class="error" data-err hidden></p>
+      <button class="btn primary wide" type="submit">Log in</button>
+      <div class="auth-links">
+        <button type="button" class="link-btn" data-go="forgot">Forgot password?</button>
+        <button type="button" class="link-btn" data-go="logincode">Log in with email code</button>
+      </div>
+    </form>
+
+    <!-- 2. Sign up: full name, email, password, then a code from the email -->
+    <form id="form-signup" class="auth-form" data-view="signup" autocomplete="on" hidden novalidate>
+      <label class="field">Full name
+        <input type="text" name="name" id="su-name" maxlength="40" placeholder="Your full name" required autocomplete="name">
+      </label>
+      <label class="field">Email
+        <input type="email" name="email" id="su-email" maxlength="150" placeholder="you@example.com" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false">
+      </label>
+      <label class="field">Password
+        <span class="pw-wrap"><input type="password" name="password" id="su-pw" maxlength="64" placeholder="At least 5 characters" required autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-for="su-pw" aria-label="Show password">Show</button></span>
+      </label>
+      <label class="field">Confirm password
+        <input type="password" name="confirm" id="su-confirm" maxlength="64" placeholder="Type the password again" required autocomplete="new-password">
+      </label>
+      <p class="error" data-err hidden></p>
+      <button class="btn primary wide" type="submit">Send verification code</button>
+      <p class="muted small auth-note">We will e-mail you a 6-digit code to confirm your address.</p>
+    </form>
+
+    <!-- 3. Forgot password / log in with code: ask for the email -->
+    <form id="form-email" class="auth-form" data-view="email" hidden novalidate>
+      <label class="field">Your email
+        <input type="email" name="email" id="em-email" maxlength="150" placeholder="you@example.com" required autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false">
+      </label>
+      <p class="error" data-err hidden></p>
+      <button class="btn primary wide" type="submit">Send code</button>
+      <div class="auth-links"><button type="button" class="link-btn" data-go="login">← Back to log in</button></div>
+    </form>
+
+    <!-- 4. Enter the 6-digit code (sign up, forgot password and code login share this) -->
+    <form id="form-otp" class="auth-form" data-view="otp" hidden novalidate>
+      <p class="muted otp-sent" id="otp-sent"></p>
+      <label class="field">6-digit code
+        <input type="text" name="code" id="otp-code" class="code-input" maxlength="6" placeholder="••••••" required inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-describedby="otp-sent">
+      </label>
+      <div id="otp-newpw" class="auth-form" hidden>
+        <label class="field">New password
+          <span class="pw-wrap"><input type="password" id="otp-pw" maxlength="64" placeholder="At least 5 characters" autocomplete="new-password">
+          <button type="button" class="pw-toggle" data-for="otp-pw" aria-label="Show password">Show</button></span>
+        </label>
+        <label class="field">Confirm new password
+          <input type="password" id="otp-pw2" maxlength="64" placeholder="Type it again" autocomplete="new-password">
+        </label>
+      </div>
+      <p class="error" data-err hidden></p>
+      <button class="btn primary wide" type="submit" id="otp-submit">Verify</button>
+      <div class="auth-links">
+        <button type="button" class="link-btn" id="otp-resend" disabled>Resend code</button>
+        <button type="button" class="link-btn" id="otp-back">← Back</button>
+      </div>
+      <p class="muted small auth-note">No e-mail yet? Check your spam or junk folder.</p>
+    </form>
+  </div>
+</section>
+{% else %}
+<div class="home" id="home">
+  <section class="hero">
+    <h1>Welcome, {{ user.name }}</h1>
+    <p class="muted">What would you like to learn today?</p>
+  </section>
+
+  <section class="chat-card" aria-label="Chat">
+    <div id="home-chat-log" class="chat-log home-chat-log" aria-live="polite" hidden></div>
+    <form id="home-chat-form" class="chat-form" autocomplete="off">
+      <input type="text" id="home-chat-input" maxlength="1000" placeholder="Ask anything, e.g. what is binary search?" enterkeyhint="send" autocomplete="off" required>
+      <button class="btn primary" id="home-chat-send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="option-grid">
+    <a class="option-card" href="{{ url_for('school.study') }}">
+      <span class="option-icon study">🎓</span>
+      <strong>{{ tr('My Study') }}</strong>
+      <span class="muted small">Today's plan, progress and report card</span>
+    </a>
+    <button type="button" class="option-card" data-open="new-course-modal">
+      <span class="option-icon">+</span>
+      <strong>Start new course</strong>
+      <span class="muted small">Pick a subject and save your study plan</span>
+    </button>
+    <button type="button" class="option-card" data-open="enrolled-modal">
+      <span class="option-icon alt">&#9776;</span>
+      <strong>Enrolled courses</strong>
+      <span class="muted small">{{ rows|length }} course{{ 's' if rows|length != 1 }} in progress</span>
+    </button>
+  </section>
+</div>
+
+<div class="modal" id="new-course-modal" role="dialog" aria-modal="true" aria-labelledby="new-course-title" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="new-course-title">Start new course</h2>
+      <button type="button" class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    <p class="muted small">Choose what you want to learn. Your course is saved to Enrolled courses.</p>
+    <form id="course-form" class="form-grid" autocomplete="off">
+      <label class="field">Subject
+        <select name="subject" id="subject-select">
+          {% for sid, name in subjects %}<option value="{{ sid }}">{{ name }}</option>{% endfor %}
+          <option value="other">Other subject (needs Groq)</option>
+        </select>
+      </label>
+      <label class="field">Level
+        <select name="level">
+          {% for value, label in level_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field span-2" id="custom-wrap" hidden>Subject name
+        <input name="custom" id="custom-input" maxlength="80" placeholder="For example: Organic Chemistry">
+      </label>
+      <label class="field">Study time per day
+        <select name="hours">
+          <option value="1">1 hour</option>
+          <option value="1.5">1.5 hours</option>
+          <option value="2" selected>2 hours</option>
+          <option value="3">3 hours</option>
+          <option value="4">4 hours</option>
+          <option value="6">6 hours</option>
+        </select>
+      </label>
+      <label class="field">Days available
+        <select name="days">
+          <option value="3">3 days</option>
+          <option value="7">7 days</option>
+          <option value="14" selected>14 days</option>
+          <option value="30">30 days</option>
+          <option value="45">45 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+        </select>
+      </label>
+      <div class="field actions span-2">
+        <div class="btn-row">
+          <button class="btn" type="button" data-close>Cancel</button>
+          <button class="btn primary" id="build-btn" type="submit">Save</button>
+        </div>
+      </div>
+    </form>
+    <ol id="steps" class="steps" hidden>
+      <li data-step="syllabus">Saving your course (custom subjects can take up to 30 seconds)</li>
+      <li data-step="open">Opening your course</li>
+    </ol>
+    <p id="form-error" class="error" hidden></p>
+  </div>
+</div>
+
+<div class="modal" id="enrolled-modal" role="dialog" aria-modal="true" aria-labelledby="enrolled-title" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h2 id="enrolled-title">Enrolled courses</h2>
+      <button type="button" class="modal-x" data-close aria-label="Close">&times;</button>
+    </div>
+    {% if rows %}
+    <div class="course-list">
+      {% for row in rows %}
+      {% set c = row.course %}
+      <article class="course-row">
+        <div class="course-row-main">
+          <h3><a href="{{ url_for('course_page', cid=c.id) }}">{{ c.title }}</a></h3>
+          <p class="muted small">{{ c.subject }}. {{ c.level|level_label }}, {{ c.hours|hours_label }} h a day for {{ c.days }} days.</p>
+          <div class="bar" aria-hidden="true"><span style="width: {{ row.stats.percent }}%"></span></div>
+          <p class="small">{{ row.stats.done }} of {{ row.stats.total }} topics complete{% if row.stats.mastery is not none %}. Average mastery {{ row.stats.mastery }}%{% endif %}</p>
+        </div>
+        <div class="course-row-actions">
+          <a class="btn primary" href="{{ url_for('course_page', cid=c.id) }}">Open</a>
+          <button class="btn quiet" type="button" data-delete="{{ c.id }}" data-name="{{ c.title }}">Delete</button>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p class="muted">You have not enrolled in any course yet.</p>
+      <button type="button" class="btn primary" data-open="new-course-modal">Start new course</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/home.js', v=asset_v) }}"></script>{% endblock %}
